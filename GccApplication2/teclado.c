@@ -18,7 +18,6 @@ Disciplina: Microcontroladores
 #define COL1 PD5    // Coluna 1 no PD5
 #define COL2 PD4    // Coluna 2 no PD4
 #define COL3 PD3    // Coluna 3 no PD3
-#define COL4 PD2    // Coluna 4 no PD2
 
 // Função inicial a ser chamada na main para inicialização 
 void prepara_teclado(){
@@ -27,8 +26,8 @@ void prepara_teclado(){
     DDRD |= (1 << LIN3) | (1 << LIN4);      // PD7 e PD6 como saídas
     
     // Configura colunas como entrada com pull-up
-    DDRD &= ~((1 << COL1) | (1 << COL2) | (1 << COL3) | (1 << COL4)); // PD5, PD4, PD3 e PD2 como entradas
-    PORTD |= (1 << COL1) | (1 << COL2) | (1 << COL3) | (1 << COL4);   // Habilitar resistores de Pull-up
+    DDRD &= ~((1 << COL1) | (1 << COL2) | (1 << COL3)); // PD5, PD4 e PD3 como entradas
+    PORTD |= (1 << COL1) | (1 << COL2) | (1 << COL3);   // Habilitar resistores de Pull-up
 }
 
 // Função para tempo de bounce da tecla 
@@ -67,7 +66,6 @@ char varredura() {
     if (!debounce(COL1 - 0)) tecla = '1'; // COL1 = PD5 (5-0=5)
     if (!debounce(COL2 - 0)) tecla = '2'; // COL2 = PD4 (4-0=4)
     if (!debounce(COL3 - 0)) tecla = '3'; // COL3 = PD3 (3-0=3)
-	if (!debounce(COL4 - 0)) tecla = 'A'; 
     PORTB |= (1 << LIN1); // Desativa LIN1
 
     // Linha 2 (PB0)
@@ -75,7 +73,6 @@ char varredura() {
     if (!debounce(COL1 - 0)) tecla = '4'; // COL1 = PD5
     if (!debounce(COL2 - 0)) tecla = '5'; // COL2 = PD4
     if (!debounce(COL3 - 0)) tecla = '6'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'B'; 
     PORTB |= (1 << LIN2); // Desativa LIN2
 
     // Linha 3 (PD7)
@@ -83,7 +80,6 @@ char varredura() {
     if (!debounce(COL1 - 0)) tecla = '7'; // COL1 = PD5
     if (!debounce(COL2 - 0)) tecla = '8'; // COL2 = PD4
     if (!debounce(COL3 - 0)) tecla = '9'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'C'; 
     PORTD |= (1 << LIN3); // Desativa LIN3
 
     // Linha 4 (PD6)
@@ -91,7 +87,6 @@ char varredura() {
     if (!debounce(COL1 - 0)) tecla = '*'; // COL1 = PD5
     if (!debounce(COL2 - 0)) tecla = '0'; // COL2 = PD4
     if (!debounce(COL3 - 0)) tecla = '#'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'D'; 
     PORTD |= (1 << LIN4); // Desativa LIN4
 
     return tecla; // Retorna a tecla identificada ou 0 se nenhuma foi pressionada
