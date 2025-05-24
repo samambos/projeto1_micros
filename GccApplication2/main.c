@@ -10,120 +10,165 @@
 #include "caixa_inicial.h"
 #include "operacao.h"
 
-// Função para validar o código do aluno
-int validar_codigo_aluno(const char* codigo) {
-	// Verifica se tem 6 dígitos
-	if(strlen(codigo) == 6) {
-		for(int i = 0; i < 6; i++) {
-			if(codigo[i] < '0' || codigo[i] > '9') {
-				return 0; // Código inválido se contém não-dígitos
-			}
-		}
-		return 1; // Código válido
-	}
-	return 0; // Código inválido
-}
-
-// Função para ler o código do aluno do teclado
+// Leitura do cÃ³digo do aluno
 void ler_codigo_aluno(char* codigo) {
 	int pos = 0;
 	char tecla;
-	
+
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, "Digite codigo:");
-	LCD_Escrever_Linha(1, 0, "______"); // 6 underscores
-	
-	while(pos < 6) {
+	LCD_Escrever_Linha(1, 0, "______");
+
+	while (pos < 6) {
 		tecla = varredura();
-		if(tecla >= '0' && tecla <= '9') {
+		if (tecla >= '0' && tecla <= '9') {
 			codigo[pos] = tecla;
-			LCD_Escrever_Linha(1, pos, &tecla);
+			char temp[2] = { tecla, '\0' };
+			LCD_Escrever_Linha(1, pos, temp);
 			pos++;
-			delay1ms(200); // Debounce
+			delay1ms(200);
 		}
 	}
-	codigo[6] = '\0'; // Termina a string
+	codigo[6] = '\0';
 }
 
-// Função principal
+// Leitura da senha do aluno
+void ler_senha(char* senha) {
+	int pos = 0;
+	char tecla;
+
+	LCD_limpar();
+	LCD_Escrever_Linha(0, 0, "Digite senha:");
+	LCD_Escrever_Linha(1, 0, "______");
+
+	while (pos < 6) {
+		tecla = varredura();
+		if (tecla >= '0' && tecla <= '9') {
+			senha[pos] = tecla;
+			char temp[2] = { '*', '\0' };
+			LCD_Escrever_Linha(1, pos, temp);
+			pos++;
+			delay1ms(200);
+		}
+	}
+	senha[6] = '\0';
+}
+
+// ValidaÃ§Ã£o com cÃ³digo e senha
+int validar_codigo_aluno(const char* codigo, const char* senha) {
+	if (strlen(codigo) != 6 || strlen(senha) != 6) return 0;
+
+	char mensagem[14];
+	mensagem[0] = 'C';
+	mensagem[1] = 'E';
+	memcpy(&mensagem[2], codigo, 6);
+	memcpy(&mensagem[8], senha, 6);
+
+	SerialEnviaChars(14, mensagem);
+
+	char resposta[32];
+	SerialRecebeChars(18, resposta);
+
+	if (resposta[0] == 'S' && resposta[1] == 'E') {
+		if (strstr(resposta, "Nao Autorizado") != NULL) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+// FunÃ§Ã£o principal
 int main(void) {
-	// Inicializações
 	prepara_teclado();
 	LCD_iniciar();
-	initUART(); // Inicializa comunicação serial
-	
-	char codigo_aluno[7]; // 6 dígitos + terminador nulo
-	
-	while(1) {
-		// Mostra mensagem inicial
+	initUART();
+
+	char codigo_aluno[7];
+	char senha_aluno[7];
+
+	const char* opcoes[] = {
+		"1-Saque",
+		"2-Deposito",
+		"3-Pagamento",
+		"*-Saldo"
+	};
+	const int total_opcoes = 4;
+	int indice_menu = 0;
+	char tecla;
+
+	while (1) {
 		mensagem_Inicial();
-		
-		// Aguarda até que algo seja pressionado para começar
-		while(varredura() == 0);
-		
-		// Lê o código do aluno
+
+		while (varredura() == 0);
+
 		ler_codigo_aluno(codigo_aluno);
-		
-		// Valida o código do aluno
-		if(validar_codigo_aluno(codigo_aluno)) {
-			// Código válido - mostra menu de operações
+		ler_senha(senha_aluno);
+
+		if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Codigo valido!");
 			LCD_Escrever_Linha(1, 0, "Processando...");
 			delay1ms(2000);
-			
-			// Menu de operações
-			char opcao = 0;
-			while(1) {
+
+			int menu_ativo = 1;
+			indice_menu = 0;
+
+			while (menu_ativo) {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "1-Saque 2-Deposito");
-				LCD_Escrever_Linha(1, 0, "3-Pagamento *-Sair");
-				
-				// Aguarda seleção de operação
-				while(1) {
-					opcao = varredura();
-					if(opcao != 0) break;
-					_delay_ms(100);
+				LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
+				if (indice_menu + 1 < total_opcoes) {
+					LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
+				} else {
+					LCD_Escrever_Linha(1, 0, " ");
 				}
-				
-				switch(opcao) {
-					case '1':
-					realizar_saque();
-					break;
-					case '2':
-					// realizar_deposito();
-					LCD_limpar();
-					LCD_Escrever_Linha(0, 0, "Deposito");
-					LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-					delay1ms(2000);
-					break;
-					case '3':
-					// realizar_pagamento();
-					LCD_limpar();
-					LCD_Escrever_Linha(0, 0, "Pagamento");
-					LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-					delay1ms(2000);
-					break;
-					case '*':
-					// Sai do menu
+
+				while ((tecla = varredura()) == 0);
+				delay1ms(300);
+
+				if (tecla == 'B' && indice_menu < total_opcoes - 2) {
+					indice_menu++;
+				} else if (tecla == 'A' && indice_menu > 0) {
+					indice_menu--;
+				} else if (tecla == '*') {
 					LCD_limpar();
 					LCD_Escrever_Linha(0, 0, "Voltando...");
 					delay1ms(1000);
-					goto fim_menu; // Sai do loop do menu
-					default:
-					break;
+					menu_ativo = 0;
+				} else if (tecla == opcoes[indice_menu][0]) {
+					switch (tecla) {
+						case '1':
+							realizar_saque();
+							break;
+						case '2':
+							LCD_limpar();
+							LCD_Escrever_Linha(0, 0, "Deposito");
+							LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
+							delay1ms(2000);
+							break;
+						case '3':
+							LCD_limpar();
+							LCD_Escrever_Linha(0, 0, "Pagamento");
+							LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
+							delay1ms(2000);
+							break;
+						case '4':
+							LCD_limpar();
+							LCD_Escrever_Linha(0, 0, "Saldo");
+							LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
+							delay1ms(2000);
+							break;
+					}
 				}
 			}
-			fim_menu:;
-			
-			} else {
-			// Código inválido - mostra mensagem e volta ao início
+		} else {
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Conta invalida!");
 			LCD_Escrever_Linha(1, 0, "Tente novamente");
 			delay1ms(2000);
 		}
 	}
-	
+
 	return 0;
 }
