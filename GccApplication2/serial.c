@@ -1,52 +1,64 @@
-/* Biblioteca para comunicação serial
-Projeto 1: Alice, Carlos e Samanta
-Disciplina: Microcontroladores
-*/
 #define F_CPU 16000000UL
 #include <avr/io.h>
-#include <avr/interrupt.h>
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <util/delay.h>
 
-// Configurações para comunicação serial
-void initUART() {
-	
-	// Definindo baud rate de 19200
-	UBRR0H = 0;
-	UBRR0L = 51;
+// Inicializa a UART com 19200 bps, 8N1
+void initUART(void) {
+    // Baud rate = 19200, UBRR = 51 para F_CPU = 16MHz
+    UBRR0H = (51 >> 8);
+    UBRR0L = 51;
 
-	// Ativa o receptor
-	UCSR0B = (1 << 4);
+    UCSR0A = 0; // Padrão
 
-	// Formato 8 bits com 1 stop bit
-	UCSR0C = 0x06;
+    // Ativa transmissor e receptor
+    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+
+    // 8 bits, sem paridade, 1 stop bit (8N1)
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
-// Função para envio de serial
+// Envia uma string de tamanho definido
 void SerialEnviaChars(int sizeS, char* string) {
-	
-	UCSR0B |= (1 << TXEN0);  // habilita transmissor 
-	for (int i = 0; i < sizeS; i++) {  // Envia um byte de cada vez
-		while (!(UCSR0A & (1 << UDRE0))) {
-			// Aguarda a flag que indica que esta vazio
-		}
-		UDR0 = string[i];  // Coloca o byte a ser transmitido no registrador de dados
-	}
-	// Aguarda o último byte ser transmitido completamente
-	while (!(UCSR0A & (1 << TXC0))) ;// Aguarda o bit TXC0 (Transmission Complete) ser definido
-	
-	UCSR0A |= (1 << TXC0);  //Limpa o TXC0 para transmissões futuras
+    for (int i = 0; i < sizeS; i++) {
+        while (!(UCSR0A & (1 << UDRE0))); // Espera registrador livre
+        UDR0 = string[i];
+    }
+
+    // Espera a transmissão do último byte
+    while (!(UCSR0A & (1 << TXC0)));
+    UCSR0A |= (1 << TXC0); // Limpa flag TXC
 }
 
-// RECEBE MENSAGENS POR SERIAL /////////////////
-void SerialRecebeChars(int sizeS, char* string){  // sizeS é o numero de bytes que serão recebidos | string é onde os bytes recebidos serão armazenados
-	UCSR0B = (1 << 4); // ativa receptor
-	int i;
-	int count = 0;
-	for(i = 0; i < sizeS; i++){  // loop que recebe, byte por byte, os dados por serial
-		while (!(UCSR0A & (1<<RXC0))); // faz o código esperar a chegada do byte
-		string[i] =(char) UDR0; // byte que chegou do serial é armazenado em UDR0 e copiado para string[i]
+// Envia string null-terminated (mais comum)
+void SerialEnviaString(char* str) {
+    SerialEnviaChars(strlen(str), str);
+}
+
+// Recebe exatamente `sizeS` caracteres e termina com \0
+void SerialRecebeChars(int sizeS, char* string) {
+    for (int i = 0; i < sizeS; i++) {
+        while (!(UCSR0A & (1 << RXC0))); // Espera byte
+        string[i] = UDR0;
+    }
+    string[sizeS] = '\0'; // finaliza string
+}
+
+// Recebe até `sizeS` caracteres, retorna o número de bytes realmente lidos
+int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
+	int bytes_recebidos = 0;
+	for (int i = 0; i < sizeS; i++) {
+		if (UCSR0A & (1 << RXC0)) { // Verifica se há um byte disponível
+			string[i] = UDR0;
+			bytes_recebidos++;
+			} else {
+			break; // Sai do loop se não houver mais bytes disponíveis
+		}
 	}
-	string[sizeS] = '\0'; // adiciona no final da string
+	if (bytes_recebidos < sizeS) { // Se não leu todos os bytes esperados, garante null-termination
+		string[bytes_recebidos] = '\0';
+		} else { // Se leu todos os bytes esperados, garante null-termination no final
+		string[sizeS] = '\0';
+	}
+	return bytes_recebidos;
 }
