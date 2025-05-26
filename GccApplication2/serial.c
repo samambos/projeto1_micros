@@ -114,3 +114,8 @@ int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
 
 	return bytes_recebidos;
 }
+
+int SerialTemDados() {
+	return !uart_buffer_empty();
+}
+

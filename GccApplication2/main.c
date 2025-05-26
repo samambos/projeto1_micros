@@ -9,6 +9,33 @@
 #include "teclado.h"
 #include "caixa_inicial.h"
 #include "operacao.h"
+#include "serial.h" // Certifique-se de ter a implementação da serial separada aqui, se não, inclua diretamente
+
+volatile int terminal_travado = 0; // 1 = fora de operação
+
+// Verifica comandos recebidos do servidor e atualiza estado do terminal
+void verifica_comandos_servidor() {
+	char comando[3];
+	if (SerialRecebeCharsNonBlocking(2, comando) == 2) {
+		comando[2] = '\0';
+
+		if (strcmp(comando, "ST") == 0) {
+			terminal_travado = 1;
+			SerialEnviaString("CT");
+			LCD_limpar();
+			LCD_Escrever_Linha(0, 0, "    FORA  DE");
+			LCD_Escrever_Linha(1, 0, "    OPERACAO");
+		}
+		else if (strcmp(comando, "SL") == 0) {
+			terminal_travado = 0;
+			SerialEnviaString("CL");
+			LCD_limpar();
+			LCD_Escrever_Linha(0, 0, "     CAIXA");
+			LCD_Escrever_Linha(1, 0, "   LIBERADO!");
+			delay1ms(1500);
+		}
+	}
+}
 
 // Leitura do código do aluno
 void ler_codigo_aluno(char* codigo) {
@@ -54,6 +81,7 @@ void ler_senha(char* senha) {
 	senha[6] = '\0';
 }
 
+// Valida código com o servidor via serial
 int validar_codigo_aluno(const char* codigo, const char* senha) {
 	if (strlen(codigo) != 6 || strlen(senha) != 6) return 0;
 
@@ -65,17 +93,15 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 
 	SerialEnviaChars(14, mensagem);
 
-	char resposta[19]; // +1 para \0
+	char resposta[19];
 	SerialRecebeChars(18, resposta);
 	resposta[18] = '\0';
 
-	// -------- DEBUG: mostrar a resposta no LCD do serv no LCD --------------
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, "Resp Servidor:");
 	LCD_Escrever_Linha(1, 0, resposta);
 	delay1ms(2000);
 	LCD_limpar();
-	// -------- DEBUG: mostrar a resposta no LCD do serv no LCD --------------
 
 	if (resposta[0] == 'S' && resposta[1] == 'E') {
 		if (strstr(resposta, "Nao autorizado") != NULL) {
@@ -87,7 +113,6 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	return 0;
 }
 
-// Função principal
 int main(void) {
 	prepara_teclado();
 	LCD_iniciar();
@@ -107,9 +132,21 @@ int main(void) {
 	char tecla;
 
 	while (1) {
+		verifica_comandos_servidor();
+
+		if (terminal_travado) {
+			_delay_ms(500);
+			continue;
+		}
+
+		LCD_limpar();
 		mensagem_Inicial();
 
-		while (varredura() == 0);
+		while (varredura() == 0) {
+			verifica_comandos_servidor();
+			if (terminal_travado) break;
+		}
+		if (terminal_travado) continue;
 
 		ler_codigo_aluno(codigo_aluno);
 		ler_senha(senha_aluno);
@@ -124,6 +161,9 @@ int main(void) {
 			indice_menu = 0;
 
 			while (menu_ativo) {
+				verifica_comandos_servidor();
+				if (terminal_travado) break;
+
 				LCD_limpar();
 				LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
 				if (indice_menu + 1 < total_opcoes) {
@@ -132,7 +172,12 @@ int main(void) {
 					LCD_Escrever_Linha(1, 0, " ");
 				}
 
-				while ((tecla = varredura()) == 0);
+				while ((tecla = varredura()) == 0) {
+					verifica_comandos_servidor();
+					if (terminal_travado) break;
+				}
+				if (terminal_travado) break;
+
 				delay1ms(300);
 
 				if (tecla == 'B' && indice_menu < total_opcoes - 2) {
