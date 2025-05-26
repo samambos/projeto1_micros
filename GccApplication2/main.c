@@ -37,7 +37,6 @@ void verifica_comandos_servidor() {
 	}
 }
 
-// Leitura do código do aluno
 void ler_codigo_aluno(char* codigo) {
 	int pos = 0;
 	char tecla;
@@ -47,6 +46,9 @@ void ler_codigo_aluno(char* codigo) {
 	LCD_Escrever_Linha(1, 0, "______");
 
 	while (pos < 6) {
+		verifica_comandos_servidor();
+		if (terminal_travado) return;
+
 		tecla = varredura();
 		if (tecla >= '0' && tecla <= '9') {
 			codigo[pos] = tecla;
@@ -59,7 +61,6 @@ void ler_codigo_aluno(char* codigo) {
 	codigo[6] = '\0';
 }
 
-// Leitura da senha do aluno
 void ler_senha(char* senha) {
 	int pos = 0;
 	char tecla;
@@ -69,6 +70,9 @@ void ler_senha(char* senha) {
 	LCD_Escrever_Linha(1, 0, "______");
 
 	while (pos < 6) {
+		verifica_comandos_servidor();
+		if (terminal_travado) return;
+
 		tecla = varredura();
 		if (tecla >= '0' && tecla <= '9') {
 			senha[pos] = tecla;
@@ -80,6 +84,7 @@ void ler_senha(char* senha) {
 	}
 	senha[6] = '\0';
 }
+
 
 // Valida código com o servidor via serial
 int validar_codigo_aluno(const char* codigo, const char* senha) {
@@ -125,7 +130,7 @@ int main(void) {
 		"1-Saque",
 		"2-Deposito",
 		"3-Pagamento",
-		"*-Saldo"
+		"4-Saldo"
 	};
 	const int total_opcoes = 4;
 	int indice_menu = 0;
@@ -135,7 +140,7 @@ int main(void) {
 		verifica_comandos_servidor();
 
 		if (terminal_travado) {
-			_delay_ms(500);
+			delay1ms(500);
 			continue;
 		}
 
@@ -149,7 +154,9 @@ int main(void) {
 		if (terminal_travado) continue;
 
 		ler_codigo_aluno(codigo_aluno);
+		if (terminal_travado) continue; 
 		ler_senha(senha_aluno);
+		if (terminal_travado) continue; 
 
 		if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 			LCD_limpar();
