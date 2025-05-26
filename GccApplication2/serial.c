@@ -2,63 +2,115 @@
 #include <avr/io.h>
 #include <string.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
+
+#define UART_BUFFER_SIZE 128
+
+volatile char uart_buffer[UART_BUFFER_SIZE];
+volatile int uart_head = 0; // posição onde ISR coloca próximo byte
+volatile int uart_tail = 0; // posição do próximo byte para leitura na função SerialRecebeChars
 
 // Inicializa a UART com 19200 bps, 8N1
 void initUART(void) {
-    // Baud rate = 19200, UBRR = 51 para F_CPU = 16MHz
-    UBRR0H = (51 >> 8);
-    UBRR0L = 51;
+	// Baud rate = 19200, UBRR = 51 para F_CPU = 16MHz
+	UBRR0H = (51 >> 8);
+	UBRR0L = 51;
 
-    UCSR0A = 0; // Padrão
+	UCSR0A = 0; // Padrão
 
-    // Ativa transmissor e receptor
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+	// Ativa transmissor e receptor e interrupção RX completa
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
-    // 8 bits, sem paridade, 1 stop bit (8N1)
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	// 8 bits, sem paridade, 1 stop bit (8N1)
+	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+
+	sei(); // habilita interrupções globais
 }
 
 // Envia uma string de tamanho definido
 void SerialEnviaChars(int sizeS, char* string) {
-    for (int i = 0; i < sizeS; i++) {
-        while (!(UCSR0A & (1 << UDRE0))); // Espera registrador livre
-        UDR0 = string[i];
-    }
+	for (int i = 0; i < sizeS; i++) {
+		while (!(UCSR0A & (1 << UDRE0))); // Espera registrador livre
+		UDR0 = string[i];
+	}
 
-    // Espera a transmissão do último byte
-    while (!(UCSR0A & (1 << TXC0)));
-    UCSR0A |= (1 << TXC0); // Limpa flag TXC
+	// Espera a transmissão do último byte
+	while (!(UCSR0A & (1 << TXC0)));
+	UCSR0A |= (1 << TXC0); // Limpa flag TXC
 }
 
 // Envia string null-terminated (mais comum)
 void SerialEnviaString(char* str) {
-    SerialEnviaChars(strlen(str), str);
+	SerialEnviaChars(strlen(str), str);
 }
 
-// Recebe exatamente `sizeS` caracteres e termina com \0
+// Buffer circular auxiliar para receber dados na ISR
+ISR(USART_RX_vect) {
+	char received = UDR0;
+	int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+	if (next_head != uart_tail) { // evita overflow
+		uart_buffer[uart_head] = received;
+		uart_head = next_head;
+	}
+}
+
+// Função auxiliar para verificar se buffer está vazio
+int uart_buffer_empty() {
+	return (uart_head == uart_tail);
+}
+
+// Função auxiliar para ler um byte do buffer
+int uart_buffer_read_char(char *c) {
+	if (uart_buffer_empty()) {
+		return 0; // nada para ler
+	}
+	*c = uart_buffer[uart_tail];
+	uart_tail = (uart_tail + 1) % UART_BUFFER_SIZE;
+	return 1;
+}
+
+// Recebe exatamente `sizeS` caracteres e termina com \0, com timeout (~1s)
+// Timeout é em número de loops com delay curto (aprox. 10ms por loop)
 void SerialRecebeChars(int sizeS, char* string) {
-    for (int i = 0; i < sizeS; i++) {
-        while (!(UCSR0A & (1 << RXC0))); // Espera byte
-        string[i] = UDR0;
-    }
-    string[sizeS] = '\0'; // finaliza string
-}
+	int received = 0;
+	int timeout_count = 0;
+	const int timeout_limit = 100; // ~1 segundo timeout (100 * 10ms)
 
-// Recebe até `sizeS` caracteres, retorna o número de bytes realmente lidos
-int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
-	int bytes_recebidos = 0;
-	for (int i = 0; i < sizeS; i++) {
-		if (UCSR0A & (1 << RXC0)) { // Verifica se há um byte disponível
-			string[i] = UDR0;
-			bytes_recebidos++;
+	while (received < sizeS && timeout_count < timeout_limit) {
+		char c;
+		if (uart_buffer_read_char(&c)) {
+			string[received++] = c;
+			timeout_count = 0; // reinicia timeout ao receber caractere
 			} else {
-			break; // Sai do loop se não houver mais bytes disponíveis
+			_delay_ms(10);
+			timeout_count++;
 		}
 	}
-	if (bytes_recebidos < sizeS) { // Se não leu todos os bytes esperados, garante null-termination
+	string[received] = '\0';
+}
+
+// Recebe até `sizeS` caracteres, retorna o número de bytes realmente lidos, com timeout (~500ms)
+int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
+	int bytes_recebidos = 0;
+	int timeout_count = 0;
+	const int timeout_limit = 50; // ~500ms (50 * 10ms)
+
+	while (bytes_recebidos < sizeS && timeout_count < timeout_limit) {
+		char c;
+		if (uart_buffer_read_char(&c)) {
+			string[bytes_recebidos++] = c;
+			timeout_count = 0;
+			} else {
+			_delay_ms(10);
+			timeout_count++;
+		}
+	}
+
+	if (bytes_recebidos < sizeS) {
 		string[bytes_recebidos] = '\0';
-		} else { // Se leu todos os bytes esperados, garante null-termination no final
+		} else {
 		string[sizeS] = '\0';
 	}
+
 	return bytes_recebidos;
 }

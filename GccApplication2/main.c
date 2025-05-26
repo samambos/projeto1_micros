@@ -71,14 +71,14 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 
 	// -------- DEBUG: mostrar a resposta no LCD do serv no LCD --------------
 	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, "Resp Serv:");
+	LCD_Escrever_Linha(0, 0, "Resp Servidor:");
 	LCD_Escrever_Linha(1, 0, resposta);
 	delay1ms(2000);
 	LCD_limpar();
 	// -------- DEBUG: mostrar a resposta no LCD do serv no LCD --------------
 
 	if (resposta[0] == 'S' && resposta[1] == 'E') {
-		if (strstr(resposta, "Nao Autorizado") != NULL) {
+		if (strstr(resposta, "Nao autorizado") != NULL) {
 			return 0;
 			} else {
 			return 1;
