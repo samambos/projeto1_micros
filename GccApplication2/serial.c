@@ -9,6 +9,10 @@
 volatile char uart_buffer[UART_BUFFER_SIZE];
 volatile int uart_head = 0; // posição onde ISR coloca próximo byte
 volatile int uart_tail = 0; // posição do próximo byte para leitura na função SerialRecebeChars
+volatile char comando_buffer[2];
+volatile uint8_t blocked = 0;
+volatile uint8_t comando_index = 0;
+
 
 // Inicializa a UART com 19200 bps, 8N1
 void initUART(void) {
@@ -47,10 +51,39 @@ void SerialEnviaString(char* str) {
 // Buffer circular auxiliar para receber dados na ISR
 ISR(USART_RX_vect) {
 	char received = UDR0;
-	int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
-	if (next_head != uart_tail) { // evita overflow
-		uart_buffer[uart_head] = received;
-		uart_head = next_head;
+
+	// Comando de 2 bytes: ST ou SL
+	comando_buffer[comando_index++] = received;
+
+	if (comando_index >= 2) {
+		if (comando_buffer[0] == 'S' && comando_buffer[1] == 'T') {
+			blocked = 1;
+			SerialEnviaString("CT");
+			} else if (comando_buffer[0] == 'S' && comando_buffer[1] == 'L') {
+			blocked = 0;
+			SerialEnviaString("CL");
+			} else {
+			// Não é comando especial, joga os bytes no buffer normal
+			int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+			if (next_head != uart_tail) {
+				uart_buffer[uart_head] = comando_buffer[0];
+				uart_head = next_head;
+			}
+			next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+			if (next_head != uart_tail) {
+				uart_buffer[uart_head] = comando_buffer[1];
+				uart_head = next_head;
+			}
+		}
+		comando_index = 0; // reseta para próxima leitura
+	}
+}
+
+int isBlocked(){
+	if (blocked){
+		return 1;
+	}else{
+		return 0;
 	}
 }
 
