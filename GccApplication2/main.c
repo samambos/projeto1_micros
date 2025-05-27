@@ -46,7 +46,6 @@ void ler_codigo_aluno(char* codigo) {
 	LCD_Escrever_Linha(1, 0, "______");
 
 	while (pos < 6) {
-		verifica_comandos_servidor();
 		if (terminal_travado) return;
 
 		tecla = varredura();
@@ -70,7 +69,6 @@ void ler_senha(char* senha) {
 	LCD_Escrever_Linha(1, 0, "______");
 
 	while (pos < 6) {
-		verifica_comandos_servidor();
 		if (terminal_travado) return;
 
 		tecla = varredura();
