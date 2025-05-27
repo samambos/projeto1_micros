@@ -26,7 +26,7 @@ void realizar_saque(void) {
 			valor_saque[pos] = tecla;
 			LCD_Escrever_Linha(1, 2+pos, &tecla);
 			pos++;
-			_delay_ms(200); // Debounce
+			delay1ms(200); // Debounce
 		}
 		// Tecla enter (confirmar)
 		else if(tecla == '#' && pos > 0) {
