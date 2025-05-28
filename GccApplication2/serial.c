@@ -39,6 +39,7 @@ ISR(USART_RX_vect) {
     static char buffer_temp[6];
     static uint8_t temp_index = 0;
     char received = UDR0;
+	
 
     // Caso esteja esperando o complemento do comando "SH"
     if (temp_index > 0 && temp_index < 6) {
@@ -107,7 +108,7 @@ void SerialRecebeChars(int sizeS, char* string) {
 			string[received++] = c;
 			timeout_count = 0;
 			} else {
-			_delay_ms(10);
+			delay1ms(10);
 			timeout_count++;
 		}
 	}
@@ -126,7 +127,7 @@ int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
 			string[bytes_recebidos++] = c;
 			timeout_count = 0;
 			} else {
-			_delay_ms(10);
+			delay1ms(10);
 			timeout_count++;
 		}
 	}

@@ -11,6 +11,19 @@
 #include "operacao.h"
 #include "serial.h"
 
+typedef enum {
+	ESTADO_TELA_INICIAL,
+	ESTADO_CODIGO,
+	ESTADO_SENHA,
+	ESTADO_VALIDACAO,
+	ESTADO_MENU,
+	ESTADO_SAQUE,
+	ESTADO_DEPOSITO,
+	ESTADO_PAGAMENTO,
+	ESTADO_SALDO
+} Estado;
+
+
 // Leitura do código do aluno
 void ler_codigo_aluno(char* codigo) {
 	int pos = 0;
@@ -79,7 +92,7 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	LCD_limpar();
 
 	if (resposta[0] == 'S' && resposta[1] == 'E') {
-		if (strstr(resposta, "Nao autorizado") != NULL) {
+		if (strstr(resposta, "Nao") != NULL) {
 			return 0;
 			} else {
 			return 1;
@@ -88,13 +101,13 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	return 0;
 }
 
-// Mostra mensagem enquanto bloqueado
+
 void aguardar_desbloqueio() {
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, "    FORA  DE");
 	LCD_Escrever_Linha(1, 0, "    OPERACAO");
 	while (isBlocked()) {
-		_delay_ms(200);
+		delay1ms(200);
 	}
 	LCD_limpar();
 }
@@ -117,94 +130,105 @@ int main(void) {
 	int indice_menu = 0;
 	char tecla;
 
+	Estado estado = ESTADO_TELA_INICIAL;
+
 	while (1) {
 		if (isBlocked()) {
 			aguardar_desbloqueio();
+			estado = ESTADO_TELA_INICIAL;
 			continue;
 		}
 
-		mensagem_Inicial();
-
-		while (varredura() == 0) {
-			if (isBlocked()) break;
-		}
-		if (isBlocked()) continue;
-
-		ler_codigo_aluno(codigo_aluno);
-		if (isBlocked()) continue;
-
-		ler_senha(senha_aluno);
-		if (isBlocked()) continue;
-
-		if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
-			if (isBlocked()) continue;
-
+		switch (estado) {
+			case ESTADO_TELA_INICIAL:
 			LCD_limpar();
-			LCD_Escrever_Linha(0, 0, "Codigo valido!");
-			LCD_Escrever_Linha(1, 0, "Processando...");
-			delay1ms(2000);
-
-			int menu_ativo = 1;
-			indice_menu = 0;
-
-			while (menu_ativo) {
+			mensagem_Inicial();
+			while (varredura() == 0) {
 				if (isBlocked()) break;
+			}
+			if (!isBlocked()) estado = ESTADO_CODIGO;
+			break;
 
+			case ESTADO_CODIGO:
+			ler_codigo_aluno(codigo_aluno);
+			if (!isBlocked()) estado = ESTADO_SENHA;
+			break;
+
+			case ESTADO_SENHA:
+			ler_senha(senha_aluno);
+			if (!isBlocked()) estado = ESTADO_VALIDACAO;
+			break;
+
+			case ESTADO_VALIDACAO:
+			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
-				if (indice_menu + 1 < total_opcoes) {
-					LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
-					} else {
-					LCD_Escrever_Linha(1, 0, " ");
-				}
+				LCD_Escrever_Linha(0, 0, "Codigo valido!");
+				LCD_Escrever_Linha(1, 0, "Processando...");
+				delay1ms(2000);
+				estado = ESTADO_MENU;
+				} else {
+				LCD_limpar();
+				LCD_Escrever_Linha(0, 0, "Conta invalida!");
+				LCD_Escrever_Linha(1, 0, "Tente novamente");
+				delay1ms(2000);
+				estado = ESTADO_TELA_INICIAL;
+			}
+			break;
 
-				while ((tecla = varredura()) == 0) {
-					if (isBlocked()) break;
-				}
+			case ESTADO_MENU:
+			LCD_limpar();
+			LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
+			if (indice_menu + 1 < total_opcoes)
+			LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
+			else
+			LCD_Escrever_Linha(1, 0, " ");
+
+			while ((tecla = varredura()) == 0) {
 				if (isBlocked()) break;
+			}
 
-				delay1ms(300);
-
-				if (tecla == 'B' && indice_menu < total_opcoes - 2) {
-					indice_menu++;
-					} else if (tecla == 'A' && indice_menu > 0) {
-					indice_menu--;
-					} else if (tecla == '*') {
-					LCD_limpar();
-					LCD_Escrever_Linha(0, 0, "Voltando...");
-					delay1ms(1000);
-					menu_ativo = 0;
-					} else if (tecla == opcoes[indice_menu][0]) {
-					switch (tecla) {
-						case '1':
-						realizar_saque();
-						break;
-						case '2':
-						LCD_limpar();
-						LCD_Escrever_Linha(0, 0, "Deposito");
-						LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-						delay1ms(2000);
-						break;
-						case '3':
-						LCD_limpar();
-						LCD_Escrever_Linha(0, 0, "Pagamento");
-						LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-						delay1ms(2000);
-						break;
-						case '4':
-						LCD_limpar();
-						LCD_Escrever_Linha(0, 0, "Saldo");
-						LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-						delay1ms(2000);
-						break;
-					}
+			delay1ms(300);
+			if (tecla == 'B' && indice_menu < total_opcoes - 2) {
+				indice_menu++;
+				} else if (tecla == 'A' && indice_menu > 0) {
+				indice_menu--;
+				} else if (tecla == '*') {
+				LCD_limpar();
+				LCD_Escrever_Linha(0, 0, "Voltando...");
+				delay1ms(1000);
+				estado = ESTADO_TELA_INICIAL;
+				} else if (tecla == opcoes[indice_menu][0]) {
+				switch (tecla) {
+					case '1': estado = ESTADO_SAQUE; break;
+					case '2': estado = ESTADO_DEPOSITO; break;
+					case '3': estado = ESTADO_PAGAMENTO; break;
+					case '4': estado = ESTADO_SALDO; break;
 				}
 			}
-			} else {
+			break;
+
+			case ESTADO_SAQUE:
+			realizar_saque();
+			estado = ESTADO_MENU;
+			break;
+
+			case ESTADO_DEPOSITO:
+			realizar_deposito();
+			estado = ESTADO_MENU;
+			break;
+
+			case ESTADO_PAGAMENTO:
 			LCD_limpar();
-			LCD_Escrever_Linha(0, 0, "Conta invalida!");
-			LCD_Escrever_Linha(1, 0, "Tente novamente");
+			LCD_Escrever_Linha(0, 0, "Pagamento");
+			LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
 			delay1ms(2000);
+			estado = ESTADO_MENU;
+			break;
+
+			case ESTADO_SALDO:
+			consultar_saldo();
+			estado = ESTADO_MENU;
+			break;
 		}
 	}
 
