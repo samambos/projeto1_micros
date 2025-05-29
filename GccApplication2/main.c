@@ -8,7 +8,7 @@
 #include "LCD.h"
 #include "teclado.h"
 #include "caixa_inicial.h"
-#include "operacao.h"
+#include "operacao.h" // Certifique-se de que as funções de operação, incluindo finalizar_sessao, estejam neste cabeçalho
 #include "serial.h"
 
 typedef enum {
@@ -18,7 +18,6 @@ typedef enum {
 	ESTADO_VALIDACAO,
 	ESTADO_MENU,
 	ESTADO_SAQUE,
-	ESTADO_DEPOSITO,
 	ESTADO_PAGAMENTO,
 	ESTADO_SALDO
 } Estado;
@@ -80,14 +79,10 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 
 	SerialEnviaChars(14, mensagem);
 
-	char resposta[32]; // 18 chars + \0
-	memset(resposta, 0, sizeof(resposta));  // Limpa o buffer para evitar lixo
+	char resposta[32];
+	memset(resposta, 0, sizeof(resposta));
 
 	SerialRecebeChars(31, resposta);
-	resposta[20] = '\0';
-
-	// Opcional: aqui você pode tentar descartar caracteres extras no buffer serial,
-	// caso SerialRecebeChars não faça isso. Depende da implementação da função.
 
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, "Resp Servidor:");
@@ -96,7 +91,7 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	LCD_limpar();
 
 	if (resposta[0] == 'S' && resposta[1] == 'E') {
-		if (strstr(resposta, "Nao") != NULL) {
+		if (strstr(resposta, "Nao autorizado") != NULL) {
 			return 0;
 			} else {
 			return 1;
@@ -125,9 +120,9 @@ int main(void) {
 
 	const char* opcoes[] = {
 		"1-Saque",
-		"2-Deposito",
-		"3-Pagamento",
-		"4-Saldo"
+		"2-Pagamento",
+		"3-Saldo",
+		"4-Sair"
 	};
 	const int total_opcoes = 4;
 	int indice_menu = 0;
@@ -190,7 +185,8 @@ int main(void) {
 				if (isBlocked()) break;
 			}
 
-			delay1ms(300);
+			delay1ms(300); // Debounce delay
+
 			if (tecla == 'B' && indice_menu < total_opcoes - 2) {
 				indice_menu++;
 				} else if (tecla == 'A' && indice_menu > 0) {
@@ -200,23 +196,21 @@ int main(void) {
 				LCD_Escrever_Linha(0, 0, "Voltando...");
 				delay1ms(1000);
 				estado = ESTADO_TELA_INICIAL;
-				} else if (tecla == opcoes[indice_menu][0]) {
+				} else {
 				switch (tecla) {
 					case '1': estado = ESTADO_SAQUE; break;
-					case '2': estado = ESTADO_DEPOSITO; break;
-					case '3': estado = ESTADO_PAGAMENTO; break;
-					case '4': estado = ESTADO_SALDO; break;
+					case '2': estado = ESTADO_PAGAMENTO; break;
+					case '3': estado = ESTADO_SALDO; break;
+					case '4': // 'Sair' option
+					finalizar_sessao(); // Call the new function to send 'CF' and await 'SF'
+					estado = ESTADO_TELA_INICIAL; // Go back to initial screen
+					break;
 				}
 			}
 			break;
 
 			case ESTADO_SAQUE:
 			realizar_saque();
-			estado = ESTADO_MENU;
-			break;
-
-			case ESTADO_DEPOSITO:
-			realizar_deposito();
 			estado = ESTADO_MENU;
 			break;
 

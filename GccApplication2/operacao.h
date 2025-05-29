@@ -12,7 +12,6 @@ Disciplina: Microcontroladores
 
 // Protótipos das funções
 void realizar_saque(void);
-void realizar_deposito(void);
 void realizar_pagamento(void);
 void enviar_mensagem_saque(const char* valor);
 char receber_resposta_servidor(void);
