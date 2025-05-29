@@ -6,6 +6,8 @@ caixa_inicial.c
 
 lcd.c
 
+login.c
+
 main.c
 
 operacao.c

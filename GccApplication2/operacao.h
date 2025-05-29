@@ -8,7 +8,7 @@
 #define OPERACAO_H
 
 // Definições
-#define MAX_VALOR_SAQUE 1200  // Tamanho máximo para o valor do saque
+#define MAX_VALOR_SAQUE 7  // Tamanho máximo para o valor do saque
 
 // Protótipos das funções
 void realizar_saque(void);

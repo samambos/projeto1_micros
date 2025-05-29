@@ -8,8 +8,15 @@
 #include "LCD.h"
 #include "teclado.h"
 #include "caixa_inicial.h"
-#include "operacao.h" 
+#include "operacao.h"
 #include "serial.h"
+#include "login.h"
+
+// Definições para o controle de timeout e LED
+#define LED_PIN PB4        // Pino do LED (PB4 = pino 12 no Arduino Uno)
+#define TIMEOUT_TOTAL 30000 // 30 segundos em milissegundos
+#define TIMEOUT_ALERTA 18000 // 18 segundos (30s - 12s) para começar a piscar
+#define INTERVALO_PISCA 250  // 250ms para piscar 2 vezes por segundo (500ms período)
 
 typedef enum {
 	ESTADO_TELA_INICIAL,
@@ -22,15 +29,22 @@ typedef enum {
 	ESTADO_SALDO
 } Estado;
 
-// Adicionando variável global para controle do tempo
+// Variáveis globais para controle do tempo e LED
 volatile uint32_t timer_count = 0;
-#define INTERVALO_CONFIRMACAO 30000 // 30 segundos em milissegundos
+volatile uint8_t alerta_led = 0; // Flag para controle do LED
+volatile uint8_t led_state = 0;  // Estado atual do LED
 
-// Protótipo da nova função
+// Protótipos das funções
 void enviar_confirmacao_operacional();
+void configurar_timer();
+void resetar_timeout();
 
 // Configuração do Timer para interrupção periódica
 void configurar_timer() {
+	// Configurar o pino do LED como saída
+	DDRB |= (1 << LED_PIN);
+	PORTB &= ~(1 << LED_PIN); // Inicia com LED desligado
+	
 	// Configurar o Timer1 para gerar interrupção a cada 1ms
 	TCCR1A = 0; // Modo normal
 	TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11); // CTC mode, prescaler 64
@@ -40,9 +54,29 @@ void configurar_timer() {
 
 ISR(TIMER1_COMPA_vect) {
 	timer_count++;
-	if (timer_count >= INTERVALO_CONFIRMACAO) {
+	
+	// Verifica se está no período de alerta (últimos 12 segundos)
+	if (timer_count >= TIMEOUT_ALERTA && timer_count < TIMEOUT_TOTAL) {
+		alerta_led = 1;
+		
+		// Piscar o LED a cada 250ms (2 vezes por segundo)
+		if (timer_count % INTERVALO_PISCA == 0) {
+			led_state = !led_state;
+			if (led_state) {
+				PORTB |= (1 << LED_PIN);  // Liga LED
+				} else {
+				PORTB &= ~(1 << LED_PIN); // Desliga LED
+			}
+		}
+	}
+	
+	// Timeout completo (30 segundos)
+	if (timer_count >= TIMEOUT_TOTAL) {
 		enviar_confirmacao_operacional();
+		finalizar_sessao();
 		timer_count = 0;
+		alerta_led = 0;
+		PORTB &= ~(1 << LED_PIN); // Desliga LED
 	}
 }
 
@@ -54,82 +88,11 @@ void enviar_confirmacao_operacional() {
 	SerialEnviaChars(2, confirmacao);
 }
 
-
-// Leitura do código do aluno
-void ler_codigo_aluno(char* codigo) {
-	int pos = 0;
-	char tecla;
-
-	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, "Digite codigo:");
-	LCD_Escrever_Linha(1, 0, "______");
-
-	while (pos < 6) {
-		if (isBlocked()) return;
-		tecla = varredura();
-		if (tecla >= '0' && tecla <= '9') {
-			codigo[pos] = tecla;
-			char temp[2] = { tecla, '\0' };
-			LCD_Escrever_Linha(1, pos, temp);
-			pos++;
-			delay1ms(200);
-		}
-	}
-	codigo[6] = '\0';
-}
-
-// Leitura da senha do aluno
-void ler_senha(char* senha) {
-	int pos = 0;
-	char tecla;
-
-	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, "Digite senha:");
-	LCD_Escrever_Linha(1, 0, "______");
-
-	while (pos < 6) {
-		if (isBlocked()) return;
-		tecla = varredura();
-		if (tecla >= '0' && tecla <= '9') {
-			senha[pos] = tecla;
-			char temp[2] = { '*', '\0' };
-			LCD_Escrever_Linha(1, pos, temp);
-			pos++;
-			delay1ms(200);
-		}
-	}
-	senha[6] = '\0';
-}
-
-int validar_codigo_aluno(const char* codigo, const char* senha) {
-	if (strlen(codigo) != 6 || strlen(senha) != 6) return 0;
-
-	char mensagem[14];
-	mensagem[0] = 'C';
-	mensagem[1] = 'E';
-	memcpy(&mensagem[2], codigo, 6);
-	memcpy(&mensagem[8], senha, 6);
-
-	SerialEnviaChars(14, mensagem);
-
-	char resposta[32];
-	memset(resposta, 0, sizeof(resposta));
-
-	SerialRecebeChars(31, resposta);
-
-	LCD_limpar();
-	LCD_Escrever_Linha(0, 4, "Aguarde...");
-	delay1ms(2000);
-	LCD_limpar();
-
-	if (resposta[0] == 'S' && resposta[1] == 'E') {
-		if (strstr(resposta, "Nao autorizado") != NULL) {
-			return 0;
-			} else {				
-			return 1;
-		}
-	}
-	return 0;
+// Função para resetar o contador de timeout
+void resetar_timeout() {
+	timer_count = 0;
+	alerta_led = 0;
+	PORTB &= ~(1 << LED_PIN); // Desliga LED
 }
 
 void aguardar_desbloqueio() {
@@ -173,6 +136,7 @@ int main(void) {
 
 		switch (estado) {
 			case ESTADO_TELA_INICIAL:
+			resetar_timeout();
 			LCD_limpar();
 			mensagem_Inicial();
 			while (varredura() == 0) {
@@ -182,16 +146,19 @@ int main(void) {
 			break;
 
 			case ESTADO_CODIGO:
+			resetar_timeout();
 			ler_codigo_aluno(codigo_aluno);
 			if (!isBlocked()) estado = ESTADO_SENHA;
 			break;
 
 			case ESTADO_SENHA:
+			resetar_timeout();
 			ler_senha(senha_aluno);
 			if (!isBlocked()) estado = ESTADO_VALIDACAO;
 			break;
 
 			case ESTADO_VALIDACAO:
+			resetar_timeout();
 			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 				LCD_limpar();
 				LCD_Escrever_Linha(0, 0, "BEM VINDO(A)!");
@@ -208,48 +175,72 @@ int main(void) {
 			break;
 
 			case ESTADO_MENU:
+			resetar_timeout();
+			// Exibe as opções iniciais do menu
 			LCD_limpar();
-			indice_menu=0;
 			LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
-			if (indice_menu + 1 < total_opcoes)
-			LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
-			else
-			LCD_Escrever_Linha(1, 0, " ");
-
-			while ((tecla = varredura()) == 0) {
-				if (isBlocked()) break;
+			if (indice_menu + 1 < total_opcoes) {
+				LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
+				} else {
+				LCD_Escrever_Linha(1, 0, " ");
 			}
 
-			delay1ms(300); // Debounce delay
+			while (1) { // Permanece neste loop até uma seleção ou saída válida
+				if (isBlocked()) break;
 
-			if (tecla == 'B' && indice_menu < total_opcoes - 2) {
-				indice_menu++;
-				} else if (tecla == 'A' && indice_menu > 0) {
-				indice_menu--;
-				} else if (tecla == '*') {
-				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "VOLTANDO...");
-				delay1ms(1000);
-				estado = ESTADO_TELA_INICIAL;
-				} else {
-				switch (tecla) {
-					case '1': estado = ESTADO_SAQUE; break;
-					case '2': estado = ESTADO_PAGAMENTO; break;
-					case '3': estado = ESTADO_SALDO; break;
-					case '4':
-					finalizar_sessao(); 
-					estado = ESTADO_TELA_INICIAL; 
-					break;
+				tecla = varredura();
+				if (tecla != 0) {
+					delay1ms(300); // Debounce delay
+
+					if (tecla == 'B') { // Rolar para baixo
+						if (indice_menu < total_opcoes - 2) { // Garante que não ultrapasse os limites para a segunda linha
+							indice_menu++;
+							LCD_limpar();
+							LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
+							if (indice_menu + 1 < total_opcoes) {
+								LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
+								} else {
+								LCD_Escrever_Linha(1, 0, " ");
+							}
+						}
+						} else if (tecla == 'A') { // Rolar para cima
+						if (indice_menu > 0) {
+							indice_menu--;
+							LCD_limpar();
+							LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
+							LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
+						}
+						} else if (tecla == '*') {
+						LCD_limpar();
+						LCD_Escrever_Linha(0, 0, "VOLTANDO...");
+						delay1ms(1000);
+						estado = ESTADO_TELA_INICIAL;
+						break; // Sai do loop while para mudar de estado
+						} else {
+						// Lida com a seleção das opções 1, 2, 3, 4
+						switch (tecla) {
+							case '1': estado = ESTADO_SAQUE; break;
+							case '2': estado = ESTADO_PAGAMENTO; break;
+							case '3': estado = ESTADO_SALDO; break;
+							case '4':
+							finalizar_sessao();
+							estado = ESTADO_TELA_INICIAL;
+							break;
+						}
+						break; // Sai do loop while para mudar de estado
+					}
 				}
 			}
-			break;
+			break; // Sai do switch case para ESTADO_MENU
 
 			case ESTADO_SAQUE:
+			resetar_timeout();
 			realizar_saque();
 			estado = ESTADO_MENU;
 			break;
 
 			case ESTADO_PAGAMENTO:
+			resetar_timeout();
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Pagamento");
 			LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
@@ -258,6 +249,7 @@ int main(void) {
 			break;
 
 			case ESTADO_SALDO:
+			resetar_timeout();
 			consultar_saldo();
 			estado = ESTADO_MENU;
 			break;

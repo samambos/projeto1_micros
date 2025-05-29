@@ -56,6 +56,7 @@ char debounce (char pino) {
 
 // Função para varredura do teclado matricial 
 char varredura() {
+	
     char tecla = 0;
     
     // Desativa todas as linhas
@@ -64,35 +65,83 @@ char varredura() {
 
     // Linha 1 (PB1)
     PORTB &= ~(1 << LIN1); // Ativa LIN1 (nível baixo)
-    if (!debounce(COL1 - 0)) tecla = '1'; // COL1 = PD5 (5-0=5)
-    if (!debounce(COL2 - 0)) tecla = '2'; // COL2 = PD4 (4-0=4)
-    if (!debounce(COL3 - 0)) tecla = '3'; // COL3 = PD3 (3-0=3)
-	if (!debounce(COL4 - 0)) tecla = 'A'; 
+    if (!debounce(COL1 - 0)){
+		resetar_timeout();
+		tecla = '1'; 
+		}// COL1 = PD5 (5-0=5)
+    if (!debounce(COL2 - 0)){
+		resetar_timeout();
+		tecla = '2';
+		} // COL2 = PD4 (4-0=4)
+    if (!debounce(COL3 - 0)){
+		resetar_timeout();
+		tecla = '3'; 
+		}// COL3 = PD3 (3-0=3)
+	if (!debounce(COL4 - 0)){
+		resetar_timeout();
+		tecla = 'A'; 
+	}
     PORTB |= (1 << LIN1); // Desativa LIN1
 
     // Linha 2 (PB0)
     PORTB &= ~(1 << LIN2); // Ativa LIN2 (nível baixo)
-    if (!debounce(COL1 - 0)) tecla = '4'; // COL1 = PD5
-    if (!debounce(COL2 - 0)) tecla = '5'; // COL2 = PD4
-    if (!debounce(COL3 - 0)) tecla = '6'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'B'; 
+    if (!debounce(COL1 - 0)){
+		resetar_timeout();
+		tecla = '4';
+		} // COL1 = PD5
+    if (!debounce(COL2 - 0)){
+		resetar_timeout();
+		tecla = '5';
+		} // COL2 = PD4
+    if (!debounce(COL3 - 0)){
+		resetar_timeout();
+		tecla = '6';
+		} // COL3 = PD3
+	if (!debounce(COL4 - 0)){
+		resetar_timeout();
+		tecla = 'B'; 
+	}
     PORTB |= (1 << LIN2); // Desativa LIN2
 
     // Linha 3 (PD7)
     PORTD &= ~(1 << LIN3); // Ativa LIN3 (nível baixo)
-    if (!debounce(COL1 - 0)) tecla = '7'; // COL1 = PD5
-    if (!debounce(COL2 - 0)) tecla = '8'; // COL2 = PD4
-    if (!debounce(COL3 - 0)) tecla = '9'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'C'; 
+    if (!debounce(COL1 - 0)){
+		resetar_timeout();
+		tecla = '7';
+		} // COL1 = PD5
+    if (!debounce(COL2 - 0)){
+		resetar_timeout();
+		tecla = '8';
+		} // COL2 = PD4
+    if (!debounce(COL3 - 0)){
+		resetar_timeout();
+		tecla = '9';
+		} // COL3 = PD3
+	if (!debounce(COL4 - 0)){
+		resetar_timeout();
+		tecla = 'C'; 
+	}
     PORTD |= (1 << LIN3); // Desativa LIN3
 
     // Linha 4 (PD6)
     PORTD &= ~(1 << LIN4); // Ativa LIN4 (nível baixo)
-    if (!debounce(COL1 - 0)) tecla = '*'; // COL1 = PD5
-    if (!debounce(COL2 - 0)) tecla = '0'; // COL2 = PD4
-    if (!debounce(COL3 - 0)) tecla = '#'; // COL3 = PD3
-	if (!debounce(COL4 - 0)) tecla = 'D'; 
+    if (!debounce(COL1 - 0)){
+		resetar_timeout();
+		tecla = '*'; 
+		}// COL1 = PD5
+    if (!debounce(COL2 - 0)){
+		resetar_timeout();
+		tecla = '0'; 
+		}// COL2 = PD4
+    if (!debounce(COL3 - 0)){
+		resetar_timeout();
+		tecla = '#';
+		} // COL3 = PD3
+	if (!debounce(COL4 - 0)){
+		resetar_timeout();
+		tecla = 'D'; 
+	}
     PORTD |= (1 << LIN4); // Desativa LIN4
-
+	
     return tecla; // Retorna a tecla identificada ou 0 se nenhuma foi pressionada
 }

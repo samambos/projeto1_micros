@@ -1,5 +1,7 @@
 Archive member included to satisfy reference by file (symbol)
 
+c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+                              main.o (__udivmodsi4)
 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
                               C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o (exit)
 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_tablejump2.o)
@@ -17,7 +19,7 @@ c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/..
 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strncpy.o)
                               lcd.o (strncpy)
 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strstr.o)
-                              main.o (strstr)
+                              login.o (strstr)
 
 Allocating common symbols
 Common symbol       size              file
@@ -38,6 +40,9 @@ Discarded input sections
                 0x00000000       0x11 lcd.o
  .text.LCD_texto_correndo
                 0x00000000      0x11a lcd.o
+ .text          0x00000000        0x0 login.o
+ .data          0x00000000        0x0 login.o
+ .bss           0x00000000        0x0 login.o
  .text          0x00000000        0x0 main.o
  .data          0x00000000        0x0 main.o
  .bss           0x00000000        0x0 main.o
@@ -67,6 +72,20 @@ Discarded input sections
                 0x00000000       0x2a timers.o
  .text.timer2hz
                 0x00000000       0x20 timers.o
+ .text          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .data          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .bss           0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc.mul
+                0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc   0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc.prologue
+                0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc.builtins
+                0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc.fmul
+                0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+ .text.libgcc.fixed
+                0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
  .text          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
  .data          0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
  .bss           0x00000000        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
@@ -166,6 +185,7 @@ Address of section .data set to 0x800100
 LOAD C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
 LOAD caixa_inicial.o
 LOAD lcd.o
+LOAD login.o
 LOAD main.o
 LOAD operacao.o
 LOAD serial.o
@@ -280,7 +300,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x00000000     0x132e
+.text           0x00000000     0x15d2
  *(.vectors)
  .vectors       0x00000000       0x68 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
                 0x00000000                __vector_default
@@ -384,102 +404,108 @@ END GROUP
  .text.LCD_Escrever_Linha
                 0x000001d6       0x3e lcd.o
                 0x000001d6                LCD_Escrever_Linha
- .text.configurar_timer
-                0x00000214       0x1e main.o
-                0x00000214                configurar_timer
- .text.enviar_confirmacao_operacional
-                0x00000232       0x2a main.o
-                0x00000232                enviar_confirmacao_operacional
- .text.__vector_11
-                0x0000025c       0x98 main.o
-                0x0000025c                __vector_11
  .text.ler_codigo_aluno
-                0x000002f4       0x8c main.o
-                0x000002f4                ler_codigo_aluno
+                0x00000214       0x8c login.o
+                0x00000214                ler_codigo_aluno
  .text.ler_senha
-                0x00000380       0x8e main.o
-                0x00000380                ler_senha
+                0x000002a0       0x8e login.o
+                0x000002a0                ler_senha
  .text.validar_codigo_aluno
-                0x0000040e       0xf6 main.o
-                0x0000040e                validar_codigo_aluno
+                0x0000032e       0xf6 login.o
+                0x0000032e                validar_codigo_aluno
+ .text.configurar_timer
+                0x00000424       0x2a main.o
+                0x00000424                configurar_timer
+ .text.enviar_confirmacao_operacional
+                0x0000044e       0x2a main.o
+                0x0000044e                enviar_confirmacao_operacional
+ .text.__vector_11
+                0x00000478      0x128 main.o
+                0x00000478                __vector_11
+ .text.resetar_timeout
+                0x000005a0       0x1c main.o
+                0x000005a0                resetar_timeout
  .text.aguardar_desbloqueio
-                0x00000504       0x34 main.o
-                0x00000504                aguardar_desbloqueio
- .text.main     0x00000538      0x1be main.o
-                0x00000538                main
+                0x000005bc       0x34 main.o
+                0x000005bc                aguardar_desbloqueio
+ .text.main     0x000005f0      0x2f2 main.o
+                0x000005f0                main
  .text.enviar_mensagem_saque
-                0x000006f6       0x86 operacao.o
-                0x000006f6                enviar_mensagem_saque
+                0x000008e2       0x86 operacao.o
+                0x000008e2                enviar_mensagem_saque
  .text.receber_resposta_servidor
-                0x0000077c       0x5e operacao.o
-                0x0000077c                receber_resposta_servidor
+                0x00000968       0x5e operacao.o
+                0x00000968                receber_resposta_servidor
  .text.realizar_saque
-                0x000007da      0x1dc operacao.o
-                0x000007da                realizar_saque
+                0x000009c6      0x210 operacao.o
+                0x000009c6                realizar_saque
  .text.consultar_saldo
-                0x000009b6      0x20e operacao.o
-                0x000009b6                consultar_saldo
+                0x00000bd6      0x20e operacao.o
+                0x00000bd6                consultar_saldo
  .text.finalizar_sessao
-                0x00000bc4       0xea operacao.o
-                0x00000bc4                finalizar_sessao
+                0x00000de4       0xea operacao.o
+                0x00000de4                finalizar_sessao
  .text.initUART
-                0x00000cae       0x1e serial.o
-                0x00000cae                initUART
+                0x00000ece       0x1e serial.o
+                0x00000ece                initUART
  .text.SerialEnviaChars
-                0x00000ccc       0x5a serial.o
-                0x00000ccc                SerialEnviaChars
+                0x00000eec       0x5a serial.o
+                0x00000eec                SerialEnviaChars
  .text.__vector_18
-                0x00000d26      0x280 serial.o
-                0x00000d26                __vector_18
+                0x00000f46      0x280 serial.o
+                0x00000f46                __vector_18
  .text.isBlocked
-                0x00000fa6        0x8 serial.o
-                0x00000fa6                isBlocked
+                0x000011c6        0x8 serial.o
+                0x000011c6                isBlocked
  .text.uart_buffer_empty
-                0x00000fae       0x1e serial.o
-                0x00000fae                uart_buffer_empty
+                0x000011ce       0x1e serial.o
+                0x000011ce                uart_buffer_empty
  .text.uart_buffer_read_char
-                0x00000fcc       0x50 serial.o
-                0x00000fcc                uart_buffer_read_char
+                0x000011ec       0x50 serial.o
+                0x000011ec                uart_buffer_read_char
  .text.SerialRecebeChars
-                0x0000101c       0x88 serial.o
-                0x0000101c                SerialRecebeChars
+                0x0000123c       0x88 serial.o
+                0x0000123c                SerialRecebeChars
  .text.prepara_teclado
-                0x000010a4       0x1a teclado.o
-                0x000010a4                prepara_teclado
+                0x000012c4       0x1a teclado.o
+                0x000012c4                prepara_teclado
  .text.atraso_debounce
-                0x000010be       0x2e teclado.o
-                0x000010be                atraso_debounce
+                0x000012de       0x2e teclado.o
+                0x000012de                atraso_debounce
  .text.debounce
-                0x000010ec       0x40 teclado.o
-                0x000010ec                debounce
+                0x0000130c       0x40 teclado.o
+                0x0000130c                debounce
  .text.varredura
-                0x0000112c      0x108 teclado.o
-                0x0000112c                varredura
+                0x0000134c      0x148 teclado.o
+                0x0000134c                varredura
  .text.delay1ms
-                0x00001234       0x30 timers.o
-                0x00001234                delay1ms
+                0x00001494       0x30 timers.o
+                0x00001494                delay1ms
  .text.delay1us
-                0x00001264       0x32 timers.o
-                0x00001264                delay1us
- .text.libgcc   0x00001296        0xc c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_tablejump2.o)
-                0x00001296                __tablejump2__
+                0x000014c4       0x32 timers.o
+                0x000014c4                delay1us
+ .text.libgcc.div
+                0x000014f6       0x44 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_udivmodsi4.o)
+                0x000014f6                __udivmodsi4
+ .text.libgcc   0x0000153a        0xc c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_tablejump2.o)
+                0x0000153a                __tablejump2__
  .text.avr-libc
-                0x000012a2       0x16 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strcat.o)
-                0x000012a2                strcat
+                0x00001546       0x16 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strcat.o)
+                0x00001546                strcat
  .text.avr-libc
-                0x000012b8       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strncat.o)
-                0x000012b8                strncat
+                0x0000155c       0x20 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strncat.o)
+                0x0000155c                strncat
  .text.avr-libc
-                0x000012d8       0x1e c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strncpy.o)
-                0x000012d8                strncpy
+                0x0000157c       0x1e c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strncpy.o)
+                0x0000157c                strncpy
  .text.avr-libc
-                0x000012f6       0x34 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strstr.o)
-                0x000012f6                strstr
-                0x0000132a                . = ALIGN (0x2)
+                0x0000159a       0x34 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/../../../../avr/lib/avr5\libc.a(strstr.o)
+                0x0000159a                strstr
+                0x000015ce                . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x0000132a        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
-                0x0000132a                _exit
-                0x0000132a                exit
+ .fini9         0x000015ce        0x0 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
+                0x000015ce                _exit
+                0x000015ce                exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -498,66 +524,75 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x0000132a        0x4 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
+ .fini0         0x000015ce        0x4 c:/program files (x86)/atmel/studio/7.0/toolchain/avr8/avr8-gnu-toolchain/bin/../lib/gcc/avr/5.4.0/avr5\libgcc.a(_exit.o)
  *(.fini0)
-                0x0000132e                _etext = .
+                0x000015d2                _etext = .
 
-.data           0x00800100      0x1d2 load address 0x0000132e
+.data           0x00800100      0x1fe load address 0x000015d2
                 0x00800100                PROVIDE (__data_start, .)
  *(.data)
  *(.data*)
  *(.gnu.linkonce.d*)
  *(.rodata)
+ .rodata        0x00800100        0x8 main.o
  *(.rodata*)
  .rodata.str1.1
-                0x00800100       0x37 caixa_inicial.o
+                0x00800108       0x37 caixa_inicial.o
  .rodata.str1.1
-                0x00800137       0xc8 main.o
-                                 0xd2 (size before relaxing)
+                0x0080013f       0x3e login.o
  .rodata.str1.1
-                0x008001ff       0xd2 operacao.o
-                                 0xd8 (size before relaxing)
+                0x0080017d       0x9b main.o
+                                 0xa5 (size before relaxing)
+ .rodata.str1.1
+                0x00800218       0xe5 operacao.o
+                                 0xf1 (size before relaxing)
  *(.gnu.linkonce.r*)
-                0x008002d2                . = ALIGN (0x2)
- *fill*         0x008002d1        0x1 
-                0x008002d2                _edata = .
-                0x008002d2                PROVIDE (__data_end, .)
+                0x008002fe                . = ALIGN (0x2)
+ *fill*         0x008002fd        0x1 
+                0x008002fe                _edata = .
+                0x008002fe                PROVIDE (__data_end, .)
 
-.bss            0x008002d2       0x92
-                0x008002d2                PROVIDE (__bss_start, .)
+.bss            0x008002fe       0x94
+                0x008002fe                PROVIDE (__bss_start, .)
  *(.bss)
  *(.bss*)
+ .bss.led_state
+                0x008002fe        0x1 main.o
+                0x008002fe                led_state
+ .bss.alerta_led
+                0x008002ff        0x1 main.o
+                0x008002ff                alerta_led
  .bss.timer_count
-                0x008002d2        0x4 main.o
-                0x008002d2                timer_count
+                0x00800300        0x4 main.o
+                0x00800300                timer_count
  .bss.waiting_for_second_byte
-                0x008002d6        0x1 serial.o
+                0x00800304        0x1 serial.o
  .bss.first_byte_of_potential_command
-                0x008002d7        0x1 serial.o
+                0x00800305        0x1 serial.o
  .bss.sh_bytes_count
-                0x008002d8        0x1 serial.o
+                0x00800306        0x1 serial.o
  .bss.sh_command_bytes_received
-                0x008002d9        0x6 serial.o
- .bss.blocked   0x008002df        0x1 serial.o
-                0x008002df                blocked
+                0x00800307        0x6 serial.o
+ .bss.blocked   0x0080030d        0x1 serial.o
+                0x0080030d                blocked
  .bss.uart_tail
-                0x008002e0        0x2 serial.o
-                0x008002e0                uart_tail
+                0x0080030e        0x2 serial.o
+                0x0080030e                uart_tail
  .bss.uart_head
-                0x008002e2        0x2 serial.o
-                0x008002e2                uart_head
+                0x00800310        0x2 serial.o
+                0x00800310                uart_head
  *(COMMON)
- COMMON         0x008002e4       0x80 serial.o
-                0x008002e4                uart_buffer
-                0x00800364                PROVIDE (__bss_end, .)
-                0x0000132e                __data_load_start = LOADADDR (.data)
-                0x00001500                __data_load_end = (__data_load_start + SIZEOF (.data))
+ COMMON         0x00800312       0x80 serial.o
+                0x00800312                uart_buffer
+                0x00800392                PROVIDE (__bss_end, .)
+                0x000015d2                __data_load_start = LOADADDR (.data)
+                0x000017d0                __data_load_end = (__data_load_start + SIZEOF (.data))
 
-.noinit         0x00800364        0x0
+.noinit         0x00800392        0x0
                 [!provide]                PROVIDE (__noinit_start, .)
  *(.noinit*)
                 [!provide]                PROVIDE (__noinit_end, .)
-                0x00800364                _end = .
+                0x00800392                _end = .
                 [!provide]                PROVIDE (__heap_start, .)
 
 .eeprom         0x00810000        0x0
@@ -602,6 +637,7 @@ END GROUP
  .comment       0x00000000       0x30 caixa_inicial.o
                                  0x31 (size before relaxing)
  .comment       0x00000030       0x31 lcd.o
+ .comment       0x00000030       0x31 login.o
  .comment       0x00000030       0x31 main.o
  .comment       0x00000030       0x31 operacao.o
  .comment       0x00000030       0x31 serial.o
@@ -628,95 +664,104 @@ END GROUP
 .debug_sfnames
  *(.debug_sfnames)
 
-.debug_aranges  0x00000000      0x1e8
+.debug_aranges  0x00000000      0x208
  *(.debug_aranges)
  .debug_aranges
                 0x00000000       0x20 caixa_inicial.o
  .debug_aranges
                 0x00000020       0x48 lcd.o
  .debug_aranges
-                0x00000068       0x58 main.o
+                0x00000068       0x30 login.o
  .debug_aranges
-                0x000000c0       0x40 operacao.o
+                0x00000098       0x48 main.o
  .debug_aranges
-                0x00000100       0x78 serial.o
+                0x000000e0       0x40 operacao.o
  .debug_aranges
-                0x00000178       0x38 teclado.o
+                0x00000120       0x78 serial.o
  .debug_aranges
-                0x000001b0       0x38 timers.o
+                0x00000198       0x38 teclado.o
+ .debug_aranges
+                0x000001d0       0x38 timers.o
 
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000     0x2d54
+.debug_info     0x00000000     0x331b
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000      0x5f4 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_info    0x000005f4      0x15a caixa_inicial.o
  .debug_info    0x0000074e      0x495 lcd.o
- .debug_info    0x00000be3      0xae7 main.o
- .debug_info    0x000016ca      0xd30 operacao.o
- .debug_info    0x000023fa      0x5c3 serial.o
- .debug_info    0x000029bd      0x287 teclado.o
- .debug_info    0x00002c44      0x110 timers.o
+ .debug_info    0x00000be3      0x478 login.o
+ .debug_info    0x0000105b      0x91a main.o
+ .debug_info    0x00001975      0xd9b operacao.o
+ .debug_info    0x00002710      0x5c3 serial.o
+ .debug_info    0x00002cd3      0x538 teclado.o
+ .debug_info    0x0000320b      0x110 timers.o
 
-.debug_abbrev   0x00000000      0xee1
+.debug_abbrev   0x00000000      0xfdf
  *(.debug_abbrev)
  .debug_abbrev  0x00000000      0x5a2 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_abbrev  0x000005a2       0x85 caixa_inicial.o
  .debug_abbrev  0x00000627      0x164 lcd.o
- .debug_abbrev  0x0000078b      0x1fd main.o
- .debug_abbrev  0x00000988      0x162 operacao.o
- .debug_abbrev  0x00000aea      0x240 serial.o
- .debug_abbrev  0x00000d2a      0x118 teclado.o
- .debug_abbrev  0x00000e42       0x9f timers.o
+ .debug_abbrev  0x0000078b      0x136 login.o
+ .debug_abbrev  0x000008c1      0x1a4 main.o
+ .debug_abbrev  0x00000a65      0x168 operacao.o
+ .debug_abbrev  0x00000bcd      0x240 serial.o
+ .debug_abbrev  0x00000e0d      0x133 teclado.o
+ .debug_abbrev  0x00000f40       0x9f timers.o
 
-.debug_line     0x00000000     0x15b9
+.debug_line     0x00000000     0x189f
  *(.debug_line .debug_line.* .debug_line_end)
  .debug_line    0x00000000      0x134 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_line    0x00000134       0x7b caixa_inicial.o
  .debug_line    0x000001af      0x28e lcd.o
- .debug_line    0x0000043d      0x4b9 main.o
- .debug_line    0x000008f6      0x495 operacao.o
- .debug_line    0x00000d8b      0x489 serial.o
- .debug_line    0x00001214      0x1ec teclado.o
- .debug_line    0x00001400      0x1b9 timers.o
+ .debug_line    0x0000043d      0x234 login.o
+ .debug_line    0x00000671      0x469 main.o
+ .debug_line    0x00000ada      0x4dd operacao.o
+ .debug_line    0x00000fb7      0x489 serial.o
+ .debug_line    0x00001440      0x2a6 teclado.o
+ .debug_line    0x000016e6      0x1b9 timers.o
 
-.debug_frame    0x00000000      0x5e0
+.debug_frame    0x00000000      0x604
  *(.debug_frame)
  .debug_frame   0x00000000       0x24 caixa_inicial.o
  .debug_frame   0x00000024       0xe0 lcd.o
- .debug_frame   0x00000104      0x154 main.o
- .debug_frame   0x00000258       0xf0 operacao.o
- .debug_frame   0x00000348      0x1c8 serial.o
- .debug_frame   0x00000510       0x7c teclado.o
- .debug_frame   0x0000058c       0x54 timers.o
+ .debug_frame   0x00000104       0x9c login.o
+ .debug_frame   0x000001a0       0xdc main.o
+ .debug_frame   0x0000027c       0xf0 operacao.o
+ .debug_frame   0x0000036c      0x1c8 serial.o
+ .debug_frame   0x00000534       0x7c teclado.o
+ .debug_frame   0x000005b0       0x54 timers.o
 
-.debug_str      0x00000000      0x9b9
+.debug_str      0x00000000      0x9eb
  *(.debug_str)
  .debug_str     0x00000000      0x208 C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/ATmega_DFP/1.7.374/gcc/dev/atmega328p/avr5/crtatmega328p.o
  .debug_str     0x00000208      0x1a8 caixa_inicial.o
                                 0x1dc (size before relaxing)
  .debug_str     0x000003b0      0x10a lcd.o
                                 0x24f (size before relaxing)
- .debug_str     0x000004ba      0x1f5 main.o
-                                0x3ef (size before relaxing)
- .debug_str     0x000006af       0xc0 operacao.o
-                                0x2ec (size before relaxing)
- .debug_str     0x0000076f      0x1cd serial.o
+ .debug_str     0x000004ba       0x8c login.o
+                                0x269 (size before relaxing)
+ .debug_str     0x00000546      0x19b main.o
+                                0x3d7 (size before relaxing)
+ .debug_str     0x000006e1       0xc0 operacao.o
+                                0x311 (size before relaxing)
+ .debug_str     0x000007a1      0x1cd serial.o
                                 0x3c3 (size before relaxing)
- .debug_str     0x0000093c       0x5d teclado.o
-                                0x1fd (size before relaxing)
- .debug_str     0x00000999       0x20 timers.o
+ .debug_str     0x0000096e       0x5d teclado.o
+                                0x232 (size before relaxing)
+ .debug_str     0x000009cb       0x20 timers.o
                                 0x1b2 (size before relaxing)
 
-.debug_loc      0x00000000     0x1693
+.debug_loc      0x00000000     0x186c
  *(.debug_loc)
  .debug_loc     0x00000000      0x3e6 lcd.o
- .debug_loc     0x000003e6      0x57a main.o
- .debug_loc     0x00000960      0x3a3 operacao.o
- .debug_loc     0x00000d03      0x768 serial.o
- .debug_loc     0x0000146b      0x190 teclado.o
- .debug_loc     0x000015fb       0x98 timers.o
+ .debug_loc     0x000003e6      0x2e7 login.o
+ .debug_loc     0x000006cd      0x2ec main.o
+ .debug_loc     0x000009b9      0x3a2 operacao.o
+ .debug_loc     0x00000d5b      0x768 serial.o
+ .debug_loc     0x000014c3      0x311 teclado.o
+ .debug_loc     0x000017d4       0x98 timers.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -736,15 +781,16 @@ END GROUP
 .debug_pubtypes
  *(.debug_pubtypes)
 
-.debug_ranges   0x00000000      0x1c0
+.debug_ranges   0x00000000      0x1d0
  *(.debug_ranges)
  .debug_ranges  0x00000000       0x10 caixa_inicial.o
  .debug_ranges  0x00000010       0x38 lcd.o
- .debug_ranges  0x00000048       0x90 main.o
- .debug_ranges  0x000000d8       0x30 operacao.o
- .debug_ranges  0x00000108       0x68 serial.o
- .debug_ranges  0x00000170       0x28 teclado.o
- .debug_ranges  0x00000198       0x28 timers.o
+ .debug_ranges  0x00000048       0x20 login.o
+ .debug_ranges  0x00000068       0x80 main.o
+ .debug_ranges  0x000000e8       0x30 operacao.o
+ .debug_ranges  0x00000118       0x68 serial.o
+ .debug_ranges  0x00000180       0x28 teclado.o
+ .debug_ranges  0x000001a8       0x28 timers.o
 
 .debug_macro
  *(.debug_macro)

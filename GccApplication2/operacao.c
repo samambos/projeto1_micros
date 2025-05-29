@@ -11,7 +11,20 @@ Disciplina: Microcontroladores
 #include <stdio.h>
 #include "timers.h"
 
-// Função para realizar um saque
+/* Biblioteca para operação
+Projeto 1: Alice, Carlos e Samanta
+Disciplina: Microcontroladores
+*/
+#include "operacao.h"
+#include "LCD.h"
+#include "teclado.h"
+#include "serial.h"
+#include <util/delay.h>
+#include <string.h>
+#include <stdio.h>
+#include "timers.h"
+
+// Função para realizar um saque (com limite de R$1200,00)
 void realizar_saque(void) {
 	char valor_saque[MAX_VALOR_SAQUE] = {0};
 	int pos = 0;
@@ -27,19 +40,17 @@ void realizar_saque(void) {
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "OP CANCELADA");
 			LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
-			delay1ms(2000);
-			return; // Sai da função imediatamente
+			delay1ms(200);
+			return;
 		}
 
 		tecla = varredura();
 
 		if(tecla >= '0' && tecla <= '9' && pos < (MAX_VALOR_SAQUE - 1)) {
 			valor_saque[pos] = tecla;
-
 			char str[2] = {tecla, '\0'};
 			LCD_Escrever_Linha(1, 2 + pos, str);
 			pos++;
-
 			delay1ms(200);
 		}
 		else if(tecla == '#' && pos > 0) {
@@ -50,11 +61,36 @@ void realizar_saque(void) {
 				LCD_limpar();
 				LCD_Escrever_Linha(0, 0, "OP CANCELADA");
 				LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
-				delay1ms(2000);
+				delay1ms(200);
 				return;
 			}
+			
+			// Verificação do limite de 120000 (R$1200,00)
+			if (pos >= 6) { // Só verifica se tiver 6 dígitos (valor máximo R$9999,99)
+				// Verifica dígito por dígito conforme as regras especificadas
+				if (valor_saque[0] == '1') { // Primeiro dígito é 1
+					if (valor_saque[1] >= '2') { // Segundo dígito é >= 2
+						if (valor_saque[2] >= '0') { // Terceiro dígito é >= 0
+							if (valor_saque[3] >= '0') { // Quarto dígito é >= 0
+								if (valor_saque[4] >= '0') { // Quinto dígito é >= 0
+									if (valor_saque[5] >= '0') { // Sexto dígito é >= 0
+										// Valor excede 120000 (R$1200,00)
+										LCD_limpar();
+										LCD_Escrever_Linha(0, 0, "Limite máximo");
+										LCD_Escrever_Linha(1, 0, "R$ 1200,00");
+										delay1ms(2000);
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			// Se passou na verificação ou não tem 6 dígitos, envia o saque
 			enviar_mensagem_saque(valor_saque);
-
+			
 			// Verifica bloqueio antes de receber resposta
 			if (isBlocked()) {
 				LCD_limpar();
@@ -63,7 +99,8 @@ void realizar_saque(void) {
 				delay1ms(2000);
 				return;
 			}
-			char resposta = receber_resposta_servidor(); // Esta função já tem um delay e exibe algo
+			
+			char resposta = receber_resposta_servidor();
 
 			LCD_limpar();
 			if(resposta == 'O') {
@@ -74,14 +111,14 @@ void realizar_saque(void) {
 				LCD_Escrever_Linha(1, 0, "insuficiente");
 			}
 			delay1ms(3000);
-			break; // Sai do loop após processar o saque
+			break;
 		}
 		else if(tecla == '*') {
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Operacao");
 			LCD_Escrever_Linha(1, 0, "cancelada");
 			delay1ms(2000);
-			break; // Sai do loop se cancelar
+			break;
 		}
 	}
 }
@@ -95,9 +132,7 @@ void enviar_mensagem_saque(const char* valor) {
 	mensagem[0] = 'C';
 	mensagem[1] = 'S';
 	mensagem[2] = (char)tamanho_valor; // Tamanho do valor como byte
-
 	strncpy(&mensagem[3], valor, tamanho_valor);
-
 	SerialEnviaChars(tamanho_mensagem, mensagem);
 }
 
