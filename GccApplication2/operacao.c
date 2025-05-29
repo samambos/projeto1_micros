@@ -4,8 +4,8 @@ Disciplina: Microcontroladores
 */
 #include "operacao.h"
 #include "LCD.h"
-#include "teclado.h"
-#include "serial.h"
+#include "teclado.h
+#include "serial.h" 
 #include <util/delay.h>
 #include <string.h>
 #include <stdio.h>
@@ -21,6 +21,15 @@ void realizar_saque(void) {
 	LCD_Escrever_Linha(1, 0, "R$");
 
 	while(1) {
+		// Verifica bloqueio durante a entrada do valor
+		if (isBlocked()) {
+			LCD_limpar();
+			LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+			LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+			delay1ms(2000);
+			return; // Sai da função imediatamente
+		}
+
 		tecla = varredura();
 
 		if(tecla >= '0' && tecla <= '9' && pos < (MAX_VALOR_SAQUE - 1)) {
@@ -35,8 +44,25 @@ void realizar_saque(void) {
 		else if(tecla == '#' && pos > 0) {
 			valor_saque[pos] = '\0';
 
+			// Verifica bloqueio antes de enviar a mensagem
+			if (isBlocked()) {
+				LCD_limpar();
+				LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+				LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+				delay1ms(2000);
+				return;
+			}
 			enviar_mensagem_saque(valor_saque);
-			char resposta = receber_resposta_servidor();
+
+			// Verifica bloqueio antes de receber resposta
+			if (isBlocked()) {
+				LCD_limpar();
+				LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+				LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+				delay1ms(2000);
+				return;
+			}
+			char resposta = receber_resposta_servidor(); // Esta função já tem um delay e exibe algo
 
 			LCD_limpar();
 			if(resposta == 'O') {
@@ -47,14 +73,14 @@ void realizar_saque(void) {
 				LCD_Escrever_Linha(1, 0, "insuficiente");
 			}
 			delay1ms(3000);
-			break;
+			break; // Sai do loop após processar o saque
 		}
 		else if(tecla == '*') {
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Operacao");
 			LCD_Escrever_Linha(1, 0, "cancelada");
 			delay1ms(2000);
-			break;
+			break; // Sai do loop se cancelar
 		}
 	}
 }
@@ -67,7 +93,7 @@ void enviar_mensagem_saque(const char* valor) {
 	char mensagem[tamanho_mensagem];
 	mensagem[0] = 'C';
 	mensagem[1] = 'S';
-	mensagem[2] = (char)tamanho_valor;
+	mensagem[2] = (char)tamanho_valor; // Tamanho do valor como byte
 
 	strncpy(&mensagem[3], valor, tamanho_valor);
 
@@ -76,80 +102,132 @@ void enviar_mensagem_saque(const char* valor) {
 
 // Função para receber resposta do servidor
 char receber_resposta_servidor(void) {
-	char resposta[5];
+	char resposta[5]; // Suficiente para "SSO", "SSI", "SSE" + '\0'
 
+	// Espera 3 bytes de resposta do servidor (ex: "SSO")
+	// Idealmente, SerialRecebeChars também deveria verificar isBlocked() ou ter timeout
 	SerialRecebeChars(3, resposta);
-	resposta[3]='\0';
+	resposta[3]='\0'; // Garante terminação nula
 
 	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, resposta);
-	delay1ms(2000);
+	LCD_Escrever_Linha(0, 0, resposta); // Para debug, mostra a resposta crua
+	delay1ms(2000); // Mostra a resposta por 2 segundos
 
 	if(resposta[0] == 'S' && resposta[1] == 'S') {
-		return resposta[2];
+		return resposta[2]; // Retorna 'O' (Ok) ou 'I' (Insuficiente)
 	}
 
-	return 'E';
+	return 'E'; // Retorna 'E' para Erro padrão
 }
 
 
 // Função para consultar saldo
 void consultar_saldo(void) {
-	char mensagem[2] = { 'C', 'V' };
-	SerialEnviaChars(2, mensagem);
+	char mensagem[2] = { 'C', 'V' }; // Mensagem de consulta de saldo: 'C' 'V'
 
-	char resposta_header[3];
+	// Verifica bloqueio antes de enviar a mensagem
+	if (isBlocked()) {
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+		LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+		delay1ms(2000);
+		return;
+	}
+	SerialEnviaChars(2, mensagem); // Envia 2 bytes
+
+	char resposta_header[3]; // Para 'S', 'V', 'n'
+	// Verifica bloqueio antes de receber o cabeçalho da resposta
+	if (isBlocked()) {
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+		LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+		delay1ms(2000);
+		return;
+	}
+	// Recebe os primeiros 3 bytes da resposta (comando + tamanho do campo de dados)
 	SerialRecebeChars(3, resposta_header);
-	resposta_header[3] = '\0';
+	resposta_header[3] = '\0'; // Garante terminação nula
 
+	// Verifica se o cabeçalho da resposta é 'S' 'V'
 	if (resposta_header[0] == 'S' && resposta_header[1] == 'V') {
-		unsigned char num_bytes_saldo = resposta_header[2];
+		unsigned char num_bytes_saldo = resposta_header[2]; // 'n' é o número de bytes do saldo
 
-		char saldo_bruto[16];
-		memset(saldo_bruto, 0, sizeof(saldo_bruto));
+		char saldo_bruto[16]; // Buffer para o saldo recebido (ex: "169071")
+		memset(saldo_bruto, 0, sizeof(saldo_bruto)); // Limpa o buffer
 
+		// Limita a leitura para não exceder o buffer
 		if (num_bytes_saldo >= sizeof(saldo_bruto)) {
 			num_bytes_saldo = sizeof(saldo_bruto) - 1;
 		}
 
+		// Verifica bloqueio antes de receber os bytes do saldo
+		if (isBlocked()) {
+			LCD_limpar();
+			LCD_Escrever_Linha(0, 0, "OP CANCELADA");
+			LCD_Escrever_Linha(1, 0, "SISTEMA BLOQ.");
+			delay1ms(2000);
+			return;
+		}
+		// Recebe os 'n' bytes do saldo
 		SerialRecebeChars(num_bytes_saldo, saldo_bruto);
-		saldo_bruto[num_bytes_saldo] = '\0';
+		saldo_bruto[num_bytes_saldo] = '\0'; // Garante terminação nula
 
-		char saldo_formatado[20];
+	
+		char saldo_formatado[20]; // Buffer para a string formatada (ex: "R$1690.71")
 		int len_bruto = strlen(saldo_bruto);
-
 		if (len_bruto >= 2) {
-			strcpy(saldo_formatado, "R$");
+			strcpy(saldo_formatado, "R$"); // Começa com "R$"
+			// Concatena a parte dos reais (todos os dígitos menos os últimos 2)
 			strncat(saldo_formatado, saldo_bruto, len_bruto - 2);
-			strcat(saldo_formatado, ".");
+			strcat(saldo_formatado, "."); // Adiciona o ponto decimal
+			// Concatena os centavos (os últimos 2 dígitos)
 			strcat(saldo_formatado, &saldo_bruto[len_bruto - 2]);
-			} else if (len_bruto == 1) {
+			} else if (len_bruto == 1) { // Ex: saldo "5" -> R$0.05
 			strcpy(saldo_formatado, "R$0.0");
 			strcat(saldo_formatado, saldo_bruto);
-			} else {
+			} else { // Ex: saldo "0" ou vazio -> R$0.00
 			strcpy(saldo_formatado, "R$0.00");
 		}
 
+
 		LCD_limpar();
 		LCD_Escrever_Linha(0, 0, "Saldo atual:");
-		LCD_Escrever_Linha(1, 0, saldo_formatado);
-		delay1ms(3000);
+		LCD_Escrever_Linha(1, 0, saldo_formatado); // Exibe o saldo formatado
+		delay1ms(3000); // Exibe por 3 segundos
 		} else {
+		// Se a resposta do servidor não seguir o formato esperado
 		LCD_limpar();
-		LCD_Escrever_Linha(0, 0, "Erro na resposta");
-		LCD_Escrever_Linha(1, 0, "do servidor!");
+		LCD_Escrever_Linha(0, 0, "Erro ao obter");
+		LCD_Escrever_Linha(1, 0, "saldo!");
 		delay1ms(3000);
 	}
 }
 
 // Função para finalizar a sessão
 void finalizar_sessao(void) {
-	char mensagem[2] = {'C', 'F'};
+	char mensagem[2] = {'C', 'F'}; // Comando para finalizar sessão
+
+	// Verifica bloqueio antes de enviar a mensagem
+	if (isBlocked()) {
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "SESSAO NAO");
+		LCD_Escrever_Linha(1, 0, "FINALIZADA!");
+		delay1ms(2000);
+		return;
+	}
 	SerialEnviaChars(2, mensagem);
 
-	char resposta[3];
-	SerialRecebeChars(2, resposta);
-	resposta[2] = '\0';
+	char resposta[3]; // Suficiente para "SF" + '\0'
+	// Verifica bloqueio antes de receber a resposta
+	if (isBlocked()) {
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "SESSAO NAO");
+		LCD_Escrever_Linha(1, 0, "FINALIZADA!");
+		delay1ms(2000);
+		return;
+	}
+	SerialRecebeChars(2, resposta); // Espera 2 bytes de resposta ("SF")
+	resposta[2] = '\0'; // Garante terminação nula
 
 	LCD_limpar();
 	
@@ -160,5 +238,5 @@ void finalizar_sessao(void) {
 		LCD_Escrever_Linha(0, 0, "Erro ao finalizar");
 		LCD_Escrever_Linha(1, 0, "sessao!");
 	}
-	delay1ms(2000);
+	delay1ms(2000); // Exibe a mensagem por 2 segundos
 }
