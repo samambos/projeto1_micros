@@ -23,7 +23,6 @@ typedef enum {
 	ESTADO_SALDO
 } Estado;
 
-
 // Leitura do código do aluno
 void ler_codigo_aluno(char* codigo) {
 	int pos = 0;
@@ -81,9 +80,14 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 
 	SerialEnviaChars(14, mensagem);
 
-	char resposta[19]; // +1 para \0
-	SerialRecebeChars(18, resposta);
-	resposta[18] = '\0';
+	char resposta[32]; // 18 chars + \0
+	memset(resposta, 0, sizeof(resposta));  // Limpa o buffer para evitar lixo
+
+	SerialRecebeChars(31, resposta);
+	resposta[20] = '\0';
+
+	// Opcional: aqui você pode tentar descartar caracteres extras no buffer serial,
+	// caso SerialRecebeChars não faça isso. Depende da implementação da função.
 
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, "Resp Servidor:");
@@ -100,7 +104,6 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	}
 	return 0;
 }
-
 
 void aguardar_desbloqueio() {
 	LCD_limpar();

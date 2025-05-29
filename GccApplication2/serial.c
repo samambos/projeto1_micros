@@ -9,9 +9,17 @@
 volatile char uart_buffer[UART_BUFFER_SIZE];
 volatile int uart_head = 0;
 volatile int uart_tail = 0;
-volatile char comando_buffer[2];
+
 volatile uint8_t blocked = 0;
-volatile uint8_t comando_index = 0;
+
+// Static variables for the SH command
+static char sh_command_bytes_received[6];
+static uint8_t sh_bytes_count = 0;
+
+// Static variables for general 2-character command parsing
+static char first_byte_of_potential_command = 0;
+static uint8_t waiting_for_second_byte = 0;
+
 
 void initUART(void) {
 	UBRR0H = (51 >> 8);
@@ -36,50 +44,76 @@ void SerialEnviaString(char* str) {
 }
 
 ISR(USART_RX_vect) {
-    static char buffer_temp[6];
-    static uint8_t temp_index = 0;
-    char received = UDR0;
-	
+	char received_byte = UDR0;
 
-    // Caso esteja esperando o complemento do comando "SH"
-    if (temp_index > 0 && temp_index < 6) {
-        buffer_temp[temp_index++] = received;
-        if (temp_index == 6) {
-            uint8_t hora = buffer_temp[4];
-            blocked = (hora < 8 || hora >= 20);
-            SerialEnviaString("CH");
-            temp_index = 0;
-        }
-        return;
-    }
+	// Handle 'SH' command continuation
+	if (sh_bytes_count > 0 && sh_bytes_count < 6) {
+		sh_command_bytes_received[sh_bytes_count++] = received_byte;
+		if (sh_bytes_count == 6) {
+			uint8_t hora = sh_command_bytes_received[4];
+			blocked = (hora < 8 || hora >= 20);
+			SerialEnviaString("CH");
+			sh_bytes_count = 0;
+		}
+		return;
+	}
 
-    // Comando normal de 2 caracteres
-    comando_buffer[comando_index++] = received;
-
-    if (comando_index == 2) {
-        if (comando_buffer[0] == 'S' && comando_buffer[1] == 'T') {
-            blocked = 1;
-            SerialEnviaString("CT");
-        } else if (comando_buffer[0] == 'S' && comando_buffer[1] == 'L') {
-            blocked = 0;
-            SerialEnviaString("CL");
-        } else if (comando_buffer[0] == 'S' && comando_buffer[1] == 'H') {
-            buffer_temp[0] = 'S';
-            buffer_temp[1] = 'H';
-            temp_index = 2;
-        } else {
-            for (int i = 0; i < 2; i++) {
-                int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
-                if (next_head != uart_tail) {
-                    uart_buffer[uart_head] = comando_buffer[i];
-                    uart_head = next_head;
-                }
-            }
-        }
-        comando_index = 0;
-    }
+	// Handle new potential 2-character commands or general data
+	if (waiting_for_second_byte) {
+		if (first_byte_of_potential_command == 'S') {
+			if (received_byte == 'T') {
+				blocked = 1;
+				SerialEnviaString("CT");
+				} else if (received_byte == 'L') {
+				blocked = 0;
+				SerialEnviaString("CL");
+				} else if (received_byte == 'H') {
+				sh_command_bytes_received[0] = 'S';
+				sh_command_bytes_received[1] = 'H';
+				sh_bytes_count = 2;
+				} else {
+				// Not a special 'S' command, push both to buffer
+				int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+				if (next_head != uart_tail) {
+					uart_buffer[uart_head] = first_byte_of_potential_command;
+					uart_head = next_head;
+				}
+				next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+				if (next_head != uart_tail) {
+					uart_buffer[uart_head] = received_byte;
+					uart_head = next_head;
+				}
+			}
+			} else {
+			// First byte was not 'S', push both to buffer
+			int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+			if (next_head != uart_tail) {
+				uart_buffer[uart_head] = first_byte_of_potential_command;
+				uart_head = next_head;
+			}
+			next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+			if (next_head != uart_tail) {
+				uart_buffer[uart_head] = received_byte;
+				uart_head = next_head;
+			}
+		}
+		waiting_for_second_byte = 0;
+		first_byte_of_potential_command = 0;
+		} else {
+		// First byte received, check if it's 'S'
+		if (received_byte == 'S') {
+			first_byte_of_potential_command = received_byte;
+			waiting_for_second_byte = 1;
+			} else {
+			// Not a special command start, push to buffer
+			int next_head = (uart_head + 1) % UART_BUFFER_SIZE;
+			if (next_head != uart_tail) {
+				uart_buffer[uart_head] = received_byte;
+				uart_head = next_head;
+			}
+		}
+	}
 }
-
 
 int isBlocked() {
 	return blocked;
@@ -87,6 +121,14 @@ int isBlocked() {
 
 int uart_buffer_empty() {
 	return (uart_head == uart_tail);
+}
+
+int uart_buffer_count() {
+	if (uart_head >= uart_tail) {
+		return uart_head - uart_tail;
+		} else {
+		return UART_BUFFER_SIZE - uart_tail + uart_head;
+	}
 }
 
 int uart_buffer_read_char(char *c) {
@@ -97,7 +139,6 @@ int uart_buffer_read_char(char *c) {
 }
 
 void SerialRecebeChars(int sizeS, char* string) {
-	uart_buffer_clear();
 	int received = 0;
 	int timeout_count = 0;
 	const int timeout_limit = 100;
@@ -108,7 +149,7 @@ void SerialRecebeChars(int sizeS, char* string) {
 			string[received++] = c;
 			timeout_count = 0;
 			} else {
-			delay1ms(10);
+			_delay_ms(10);
 			timeout_count++;
 		}
 	}
@@ -116,7 +157,6 @@ void SerialRecebeChars(int sizeS, char* string) {
 }
 
 int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
-	uart_buffer_clear();
 	int bytes_recebidos = 0;
 	int timeout_count = 0;
 	const int timeout_limit = 50;
@@ -127,7 +167,7 @@ int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
 			string[bytes_recebidos++] = c;
 			timeout_count = 0;
 			} else {
-			delay1ms(10);
+			_delay_ms(10);
 			timeout_count++;
 		}
 	}
@@ -137,7 +177,6 @@ int SerialRecebeCharsNonBlocking(int sizeS, char* string) {
 		} else {
 		string[sizeS] = '\0';
 	}
-
 	return bytes_recebidos;
 }
 

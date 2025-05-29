@@ -38,11 +38,11 @@ void realizar_saque(void) {
 
 			LCD_limpar();
 			if(resposta == 'O') {
-				LCD_Escrever_Linha(0, 0, "Saque realizado!");
-				LCD_Escrever_Linha(1, 0, "Retire o dinheiro");
+				LCD_Escrever_Linha(0, 0, "Saque");
+				LCD_Escrever_Linha(1, 0, "Realizado!");
 				} else {
-				LCD_Escrever_Linha(0, 0, "Saldo insuficiente");
-				LCD_Escrever_Linha(1, 0, "Tente outro valor");
+				LCD_Escrever_Linha(0, 0, "Saldo");
+				LCD_Escrever_Linha(1, 0, "insuficiente");
 			}
 			delay1ms(3000);
 			break;
@@ -83,8 +83,8 @@ char receber_resposta_servidor(void) {
 	LCD_Escrever_Linha(0, 0, resposta);
 	delay1ms(2000);
 
-	if(resposta[1] == 'S' && resposta[2] == 'S') {
-		return resposta[3]; // 'O' ou 'I'
+	if(resposta[0] == 'S' && resposta[1] == 'S') {
+		return resposta[2]; // 'O' ou 'I'
 	}
 
 	return 'E'; // Erro
