@@ -5,19 +5,6 @@ Disciplina: Microcontroladores
 #include "operacao.h"
 #include "LCD.h"
 #include "teclado.h"
-#include "serial.h" 
-#include <util/delay.h>
-#include <string.h>
-#include <stdio.h>
-#include "timers.h"
-
-/* Biblioteca para operação
-Projeto 1: Alice, Carlos e Samanta
-Disciplina: Microcontroladores
-*/
-#include "operacao.h"
-#include "LCD.h"
-#include "teclado.h"
 #include "serial.h"
 #include <util/delay.h>
 #include <string.h>
