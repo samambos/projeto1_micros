@@ -8,7 +8,7 @@
 #include "LCD.h"
 #include "teclado.h"
 #include "caixa_inicial.h"
-#include "operacao.h" // Certifique-se de que as funções de operação, incluindo finalizar_sessao, estejam neste cabeçalho
+#include "operacao.h" 
 #include "serial.h"
 
 typedef enum {
@@ -175,6 +175,7 @@ int main(void) {
 
 			case ESTADO_MENU:
 			LCD_limpar();
+			indice_menu=0;
 			LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
 			if (indice_menu + 1 < total_opcoes)
 			LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
@@ -201,9 +202,9 @@ int main(void) {
 					case '1': estado = ESTADO_SAQUE; break;
 					case '2': estado = ESTADO_PAGAMENTO; break;
 					case '3': estado = ESTADO_SALDO; break;
-					case '4': // 'Sair' option
-					finalizar_sessao(); // Call the new function to send 'CF' and await 'SF'
-					estado = ESTADO_TELA_INICIAL; // Go back to initial screen
+					case '4':
+					finalizar_sessao(); 
+					estado = ESTADO_TELA_INICIAL; 
 					break;
 				}
 			}

@@ -5,10 +5,10 @@ Disciplina: Microcontroladores
 #include "operacao.h"
 #include "LCD.h"
 #include "teclado.h"
-#include "serial.h" // Adicionado para SerialEnviaChars e SerialRecebeChars
+#include "serial.h"
 #include <util/delay.h>
 #include <string.h>
-
+#include <stdio.h>
 
 // Função para realizar um saque
 void realizar_saque(void) {
@@ -76,54 +76,80 @@ void enviar_mensagem_saque(const char* valor) {
 
 // Função para receber resposta do servidor
 char receber_resposta_servidor(void) {
-	char resposta[5]; // Suficiente para "SSO", "SSI", "SSE" + '\0'
+	char resposta[5];
 
-	// Espera 3 bytes de resposta do servidor (ex: "SSO")
 	SerialRecebeChars(3, resposta);
-	resposta[3]='\0'; // Garante terminação nula
+	resposta[3]='\0';
 
 	LCD_limpar();
 	LCD_Escrever_Linha(0, 0, resposta);
 	delay1ms(2000);
 
 	if(resposta[0] == 'S' && resposta[1] == 'S') {
-		return resposta[2]; // Retorna 'O' (Ok) ou 'I' (Insuficiente)
+		return resposta[2];
 	}
 
-	return 'E'; // Retorna 'E' para Erro padrão
+	return 'E';
 }
 
 
 // Função para consultar saldo
 void consultar_saldo(void) {
-	char mensagem[3] = { 'C', 'L', 0 }; // 'CL' + 1 byte de lixo (0)
-	SerialEnviaChars(3, mensagem);
-
-	char resposta[10]; // Suficiente para "SL" + 6 dígitos de saldo + '\0' (total 9 bytes)
-	// Espera 8 bytes de resposta do servidor (ex: "SL123456")
-	SerialRecebeChars(8, resposta);
-	resposta[8] = '\0'; // Garante terminação nula
-
-	LCD_limpar();
-	if (resposta[0] == 'S' && resposta[1] == 'L') {
-		LCD_Escrever_Linha(0, 0, "Saldo atual:");
-		LCD_Escrever_Linha(1, 0, &resposta[2]);
-		} else {
-		LCD_Escrever_Linha(0, 0, "Erro ao obter");
-		LCD_Escrever_Linha(1, 0, "saldo");
-	}
-	delay1ms(3000);
-}
-
-
-// Nova função para finalizar a sessão
-void finalizar_sessao(void) {
-	char mensagem[2] = {'C', 'F'}; // Comando para finalizar sessão
+	char mensagem[2] = { 'C', 'V' };
 	SerialEnviaChars(2, mensagem);
 
-	char resposta[3]; // Suficiente para "SF" + '\0'
-	SerialRecebeChars(2, resposta); // Espera 2 bytes de resposta ("SF")
-	resposta[2] = '\0'; // Garante terminação nula
+	char resposta_header[3];
+	SerialRecebeChars(3, resposta_header);
+	resposta_header[3] = '\0';
+
+	if (resposta_header[0] == 'S' && resposta_header[1] == 'V') {
+		unsigned char num_bytes_saldo = resposta_header[2];
+
+		char saldo_bruto[16];
+		memset(saldo_bruto, 0, sizeof(saldo_bruto));
+
+		if (num_bytes_saldo >= sizeof(saldo_bruto)) {
+			num_bytes_saldo = sizeof(saldo_bruto) - 1;
+		}
+
+		SerialRecebeChars(num_bytes_saldo, saldo_bruto);
+		saldo_bruto[num_bytes_saldo] = '\0';
+
+		char saldo_formatado[20];
+		int len_bruto = strlen(saldo_bruto);
+
+		if (len_bruto >= 2) {
+			strcpy(saldo_formatado, "R$");
+			strncat(saldo_formatado, saldo_bruto, len_bruto - 2);
+			strcat(saldo_formatado, ".");
+			strcat(saldo_formatado, &saldo_bruto[len_bruto - 2]);
+			} else if (len_bruto == 1) {
+			strcpy(saldo_formatado, "R$0.0");
+			strcat(saldo_formatado, saldo_bruto);
+			} else {
+			strcpy(saldo_formatado, "R$0.00");
+		}
+
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "Saldo atual:");
+		LCD_Escrever_Linha(1, 0, saldo_formatado);
+		delay1ms(3000);
+		} else {
+		LCD_limpar();
+		LCD_Escrever_Linha(0, 0, "Erro na resposta");
+		LCD_Escrever_Linha(1, 0, "do servidor!");
+		delay1ms(3000);
+	}
+}
+
+// Função para finalizar a sessão
+void finalizar_sessao(void) {
+	char mensagem[2] = {'C', 'F'};
+	SerialEnviaChars(2, mensagem);
+
+	char resposta[3];
+	SerialRecebeChars(2, resposta);
+	resposta[2] = '\0';
 
 	LCD_limpar();
 	
@@ -134,5 +160,5 @@ void finalizar_sessao(void) {
 		LCD_Escrever_Linha(0, 0, "Erro ao finalizar");
 		LCD_Escrever_Linha(1, 0, "sessao!");
 	}
-	delay1ms(2000); // Exibe a mensagem por 2 segundos
+	delay1ms(2000);
 }
