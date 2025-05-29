@@ -4,11 +4,12 @@ Disciplina: Microcontroladores
 */
 #include "operacao.h"
 #include "LCD.h"
-#include "teclado.h
+#include "teclado.h"
 #include "serial.h" 
 #include <util/delay.h>
 #include <string.h>
 #include <stdio.h>
+#include "timers.h"
 
 // Função para realizar um saque
 void realizar_saque(void) {

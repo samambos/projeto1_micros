@@ -6,7 +6,7 @@ Disciplina: Microcontroladores
 #ifndef LCD_H_
 #define LCD_H_
 
-void LCD_limpa();
+void LCD_limpar();
 void LCD_cmd( unsigned char cmnd );
 void LCD_iniciar(void);
 void LCD_escrever(const char *printando);

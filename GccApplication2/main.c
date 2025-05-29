@@ -22,6 +22,39 @@ typedef enum {
 	ESTADO_SALDO
 } Estado;
 
+// Adicionando variável global para controle do tempo
+volatile uint32_t timer_count = 0;
+#define INTERVALO_CONFIRMACAO 30000 // 30 segundos em milissegundos
+
+// Protótipo da nova função
+void enviar_confirmacao_operacional();
+
+// Configuração do Timer para interrupção periódica
+void configurar_timer() {
+	// Configurar o Timer1 para gerar interrupção a cada 1ms
+	TCCR1A = 0; // Modo normal
+	TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11); // CTC mode, prescaler 64
+	OCR1A = 250; // Valor para interrupção a cada 1ms (16MHz/64/250 = 1ms)
+	TIMSK1 = (1 << OCIE1A); // Habilitar interrupção por comparação
+}
+
+ISR(TIMER1_COMPA_vect) {
+	timer_count++;
+	if (timer_count >= INTERVALO_CONFIRMACAO) {
+		enviar_confirmacao_operacional();
+		timer_count = 0;
+	}
+}
+
+// Função para enviar a mensagem de confirmação operacional
+void enviar_confirmacao_operacional() {
+	char confirmacao[2];
+	confirmacao[0]='C';
+	confirmacao[1]='O';
+	SerialEnviaChars(2, confirmacao);
+}
+
+
 // Leitura do código do aluno
 void ler_codigo_aluno(char* codigo) {
 	int pos = 0;
@@ -85,15 +118,14 @@ int validar_codigo_aluno(const char* codigo, const char* senha) {
 	SerialRecebeChars(31, resposta);
 
 	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, "Resp Servidor:");
-	LCD_Escrever_Linha(1, 0, resposta);
+	LCD_Escrever_Linha(0, 4, "Aguarde...");
 	delay1ms(2000);
 	LCD_limpar();
 
 	if (resposta[0] == 'S' && resposta[1] == 'E') {
 		if (strstr(resposta, "Nao autorizado") != NULL) {
 			return 0;
-			} else {
+			} else {				
 			return 1;
 		}
 	}
@@ -114,6 +146,8 @@ int main(void) {
 	prepara_teclado();
 	LCD_iniciar();
 	initUART();
+	configurar_timer();
+	sei(); // Habilitar interrupções globais
 
 	char codigo_aluno[7];
 	char senha_aluno[7];
@@ -160,14 +194,14 @@ int main(void) {
 			case ESTADO_VALIDACAO:
 			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "Codigo valido!");
-				LCD_Escrever_Linha(1, 0, "Processando...");
+				LCD_Escrever_Linha(0, 0, "BEM VINDO(A)!");
+				LCD_Escrever_Linha(1, 0, "PROCESSANDO...");
 				delay1ms(2000);
 				estado = ESTADO_MENU;
 				} else {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "Conta invalida!");
-				LCD_Escrever_Linha(1, 0, "Tente novamente");
+				LCD_Escrever_Linha(0, 0, "CONTA INVALIDA!");
+				LCD_Escrever_Linha(1, 0, "TENTE NOVAMENTE");
 				delay1ms(2000);
 				estado = ESTADO_TELA_INICIAL;
 			}
@@ -194,7 +228,7 @@ int main(void) {
 				indice_menu--;
 				} else if (tecla == '*') {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "Voltando...");
+				LCD_Escrever_Linha(0, 0, "VOLTANDO...");
 				delay1ms(1000);
 				estado = ESTADO_TELA_INICIAL;
 				} else {

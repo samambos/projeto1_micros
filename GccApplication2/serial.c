@@ -1,8 +1,9 @@
-#define F_CPU 16000000UL
+//#define F_CPU 16000000UL
 #include <avr/io.h>
 #include <string.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include "timers.h"
 
 #define UART_BUFFER_SIZE 128
 
@@ -34,6 +35,7 @@ void SerialEnviaChars(int sizeS, char* string) {
 	for (int i = 0; i < sizeS; i++) {
 		while (!(UCSR0A & (1 << UDRE0)));
 		UDR0 = string[i];
+		delay1ms(20);
 	}
 	while (!(UCSR0A & (1 << TXC0)));
 	UCSR0A |= (1 << TXC0);
@@ -45,14 +47,16 @@ void SerialEnviaString(char* str) {
 
 ISR(USART_RX_vect) {
 	char received_byte = UDR0;
-
+	char retorno[2];
+	retorno[0]='C';
 	// Handle 'SH' command continuation
 	if (sh_bytes_count > 0 && sh_bytes_count < 6) {
 		sh_command_bytes_received[sh_bytes_count++] = received_byte;
 		if (sh_bytes_count == 6) {
 			uint8_t hora = sh_command_bytes_received[4];
-			blocked = (hora < 8 || hora >= 20);
-			SerialEnviaString("CH");
+			blocked = (hora <= 8 || hora >= 20);
+			retorno[1]='H';
+			SerialEnviaChars(2,retorno);
 			sh_bytes_count = 0;
 		}
 		return;
@@ -63,10 +67,12 @@ ISR(USART_RX_vect) {
 		if (first_byte_of_potential_command == 'S') {
 			if (received_byte == 'T') {
 				blocked = 1;
-				SerialEnviaString("CT");
+				retorno[1]='T';
+				SerialEnviaChars(2,retorno);
 				} else if (received_byte == 'L') {
 				blocked = 0;
-				SerialEnviaString("CL");
+				retorno[1]='L';
+				SerialEnviaChars(2,retorno);
 				} else if (received_byte == 'H') {
 				sh_command_bytes_received[0] = 'S';
 				sh_command_bytes_received[1] = 'H';
