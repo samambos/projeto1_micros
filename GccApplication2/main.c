@@ -12,11 +12,11 @@
 #include "serial.h"
 #include "login.h"
 
-// Definições para o controle de timeout e LED
-#define LED_PIN PB4        // Pino do LED (PB4 = pino 12 no Arduino Uno)
-#define TIMEOUT_TOTAL 30000 // 30 segundos em milissegundos
+// Definições para controle de timeout e LED
+#define LED_PIN PB4 // Pino do LED (PB4 = pino 12 no Arduino Uno)
+#define TIMEOUT_TOTAL 30000 // 30 segundos em milissegundos para inatividade
 #define TIMEOUT_ALERTA 18000 // 18 segundos (30s - 12s) para começar a piscar
-#define INTERVALO_PISCA 250  // 250ms para piscar 2 vezes por segundo (500ms período)
+#define INTERVALO_PISCA 250 // 250ms para piscar 2 vezes por segundo (500ms período)
 
 typedef enum {
 	ESTADO_TELA_INICIAL,
@@ -29,80 +29,86 @@ typedef enum {
 	ESTADO_SALDO
 } Estado;
 
-// Variáveis globais para controle do tempo e LED
+// Variáveis globais para controle de tempo e LED
 volatile uint32_t timer_count = 0;
 volatile uint8_t alerta_led = 0; // Flag para controle do LED
-volatile uint8_t led_state = 0;  // Estado atual do LED
+volatile uint8_t led_state = 0; // Estado atual do LED
 
 // Protótipos das funções
 void enviar_confirmacao_operacional();
 void configurar_timer();
 void resetar_timeout();
+void aguardar_desbloqueio();
 
 // Configuração do Timer para interrupção periódica
 void configurar_timer() {
-	// Configurar o pino do LED como saída
-	DDRB |= (1 << LED_PIN);
+	DDRB |= (1 << LED_PIN); // Configura pino do LED como saída
 	PORTB &= ~(1 << LED_PIN); // Inicia com LED desligado
-	
-	// Configurar o Timer1 para gerar interrupção a cada 1ms
+
 	TCCR1A = 0; // Modo normal
-	TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11); // CTC mode, prescaler 64
-	OCR1A = 250; // Valor para interrupção a cada 1ms (16MHz/64/250 = 1ms)
-	TIMSK1 = (1 << OCIE1A); // Habilitar interrupção por comparação
+	TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11); // Modo CTC, prescaler 64
+	OCR1A = 250; // Valor para interrupção a cada 1ms (16MHz / 64 / 250 = 1ms)
+	TIMSK1 = (1 << OCIE1A); // Habilita interrupção por comparação
 }
 
 ISR(TIMER1_COMPA_vect) {
 	timer_count++;
-	
-	// Verifica se está no período de alerta (últimos 12 segundos)
+
+	// Verifica período de alerta (últimos 12 segundos)
 	if (timer_count >= TIMEOUT_ALERTA && timer_count < TIMEOUT_TOTAL) {
 		alerta_led = 1;
-		
-		// Piscar o LED a cada 250ms (2 vezes por segundo)
+
+		// Pisca o LED 2 vezes por segundo
 		if (timer_count % INTERVALO_PISCA == 0) {
 			led_state = !led_state;
 			if (led_state) {
-				PORTB |= (1 << LED_PIN);  // Liga LED
+				PORTB |= (1 << LED_PIN); // Liga LED
 				} else {
 				PORTB &= ~(1 << LED_PIN); // Desliga LED
 			}
 		}
 	}
-	
+
 	// Timeout completo (30 segundos)
 	if (timer_count >= TIMEOUT_TOTAL) {
-		enviar_confirmacao_operacional();
-		finalizar_sessao();
-		timer_count = 0;
-		alerta_led = 0;
+		enviar_confirmacao_operacional(); // Envia "CO"
+		finalizar_sessao(); // Encerra a sessão
+		timer_count = 0; // Reseta contador
+		alerta_led = 0; // Desliga alerta
 		PORTB &= ~(1 << LED_PIN); // Desliga LED
+		setBlocked(1); // Bloqueia sistema por timeout
 	}
 }
 
-// Função para enviar a mensagem de confirmação operacional
+// Envia mensagem de confirmação operacional "CO"
 void enviar_confirmacao_operacional() {
 	char confirmacao[2];
-	confirmacao[0]='C';
-	confirmacao[1]='O';
-	SerialEnviaChars(2, confirmacao);
+	confirmacao[0] = 'C';
+	confirmacao[1] = 'O';
+	SerialEnviaChars(2, confirmacao); // Envia "CO"
 }
 
-// Função para resetar o contador de timeout
+// Reseta contador de timeout e estado do LED
 void resetar_timeout() {
 	timer_count = 0;
 	alerta_led = 0;
 	PORTB &= ~(1 << LED_PIN); // Desliga LED
 }
 
+// Aguarda o desbloqueio do terminal
 void aguardar_desbloqueio() {
 	LCD_limpar();
-	LCD_Escrever_Linha(0, 0, "    FORA  DE");
-	LCD_Escrever_Linha(1, 0, "    OPERACAO");
-	while (isBlocked()) {
-		delay1ms(200);
+	LCD_Escrever_Linha(0, 4, "FORA  DE"); // Exibe "FORA DE OPERAÇÃO"
+	LCD_Escrever_Linha(1, 4, "OPERACAO");
+	while (isBlocked()) { // Espera sistema ser desbloqueado
+		if (serial_response_pending) {
+			SerialEnviaChars(2, serial_response_char);
+			serial_response_pending = 0; // Limpa a flag
+			resetar_timeout(); // Reseta timeout após interação serial (desbloqueio)
+		}
+		delay1ms(200); // Pequeno atraso
 	}
-	LCD_limpar();
+	LCD_limpar(); // Limpa LCD após desbloqueio
 }
 
 int main(void) {
@@ -110,7 +116,7 @@ int main(void) {
 	LCD_iniciar();
 	initUART();
 	configurar_timer();
-	sei(); // Habilitar interrupções globais
+	sei(); // Habilita interrupções globais
 
 	char codigo_aluno[7];
 	char senha_aluno[7];
@@ -128,33 +134,51 @@ int main(void) {
 	Estado estado = ESTADO_TELA_INICIAL;
 
 	while (1) {
+		// Gerencia respostas da ISR e bloqueio (crítico)
+		if (serial_response_pending) {
+			SerialEnviaChars(2, serial_response_char);
+			serial_response_pending = 0; // Limpa a flag após envio
+			resetar_timeout(); // Reseta timeout após interação serial
+		}
+
+		// Sistema bloqueado por comando ST, SH ou timeout
 		if (isBlocked()) {
 			aguardar_desbloqueio();
 			estado = ESTADO_TELA_INICIAL;
 			continue;
 		}
-
+		
 		switch (estado) {
 			case ESTADO_TELA_INICIAL:
 			resetar_timeout();
 			LCD_limpar();
 			mensagem_Inicial();
 			while (varredura() == 0) {
-				if (isBlocked()) break;
+				if (isBlocked()) break; // Sai se for bloqueado
 			}
-			if (!isBlocked()) estado = ESTADO_CODIGO;
+			if (!isBlocked()) {
+				estado = ESTADO_CODIGO;
+			}
 			break;
 
 			case ESTADO_CODIGO:
 			resetar_timeout();
 			ler_codigo_aluno(codigo_aluno);
-			if (!isBlocked()) estado = ESTADO_SENHA;
+			if (isBlocked()) { // Se bloqueado durante a leitura
+				estado = ESTADO_TELA_INICIAL;
+				break;
+			}
+			estado = ESTADO_SENHA;
 			break;
 
 			case ESTADO_SENHA:
 			resetar_timeout();
 			ler_senha(senha_aluno);
-			if (!isBlocked()) estado = ESTADO_VALIDACAO;
+			if (isBlocked()) { // Se bloqueado durante a leitura
+				estado = ESTADO_TELA_INICIAL;
+				break;
+			}
+			estado = ESTADO_VALIDACAO;
 			break;
 
 			case ESTADO_VALIDACAO:
@@ -176,8 +200,8 @@ int main(void) {
 
 			case ESTADO_MENU:
 			resetar_timeout();
-			// Exibe as opções iniciais do menu
 			LCD_limpar();
+			indice_menu = 0;
 			LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
 			if (indice_menu + 1 < total_opcoes) {
 				LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
@@ -185,15 +209,15 @@ int main(void) {
 				LCD_Escrever_Linha(1, 0, " ");
 			}
 
-			while (1) { // Permanece neste loop até uma seleção ou saída válida
+			while (1) {
 				if (isBlocked()) break;
 
 				tecla = varredura();
 				if (tecla != 0) {
-					delay1ms(300); // Debounce delay
+					delay1ms(300); // Debounce
 
 					if (tecla == 'B') { // Rolar para baixo
-						if (indice_menu < total_opcoes - 2) { // Garante que não ultrapasse os limites para a segunda linha
+						if (indice_menu < total_opcoes - 2) {
 							indice_menu++;
 							LCD_limpar();
 							LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
@@ -210,32 +234,35 @@ int main(void) {
 							LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
 							LCD_Escrever_Linha(1, 0, opcoes[indice_menu + 1]);
 						}
-						} else if (tecla == '*') {
+						} else if (tecla == '*') { // Voltar para tela inicial
 						LCD_limpar();
 						LCD_Escrever_Linha(0, 0, "VOLTANDO...");
 						delay1ms(1000);
 						estado = ESTADO_TELA_INICIAL;
-						break; // Sai do loop while para mudar de estado
+						break;
 						} else {
-						// Lida com a seleção das opções 1, 2, 3, 4
 						switch (tecla) {
 							case '1': estado = ESTADO_SAQUE; break;
 							case '2': estado = ESTADO_PAGAMENTO; break;
 							case '3': estado = ESTADO_SALDO; break;
-							case '4':
+							case '4': // Sair
 							finalizar_sessao();
 							estado = ESTADO_TELA_INICIAL;
 							break;
 						}
-						break; // Sai do loop while para mudar de estado
+						break;
 					}
 				}
 			}
-			break; // Sai do switch case para ESTADO_MENU
+			break;
 
 			case ESTADO_SAQUE:
 			resetar_timeout();
 			realizar_saque();
+			if (isBlocked()) { // Se bloqueado durante o saque
+				estado = ESTADO_TELA_INICIAL;
+				break;
+			}
 			estado = ESTADO_MENU;
 			break;
 
@@ -251,6 +278,10 @@ int main(void) {
 			case ESTADO_SALDO:
 			resetar_timeout();
 			consultar_saldo();
+			if (isBlocked()) { // Se bloqueado durante a consulta de saldo
+				estado = ESTADO_TELA_INICIAL;
+				break;
+			}
 			estado = ESTADO_MENU;
 			break;
 		}

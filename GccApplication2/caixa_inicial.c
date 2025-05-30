@@ -9,6 +9,6 @@ Disciplina: Microcontroladores
 #include "teclado.h"
 void mensagem_Inicial(){
 		LCD_limpar();
-		LCD_Escrever_Linha(0,0,"DIGITE QUALQUER");
-		LCD_Escrever_Linha(1, 5, "TECLA");
+		LCD_Escrever_Linha(0,1,"DIGITE QUALQUER");
+		LCD_Escrever_Linha(1,5, "TECLA");
 }
