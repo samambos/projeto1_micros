@@ -40,7 +40,6 @@ void configurar_timer();
 void resetar_timeout();
 void aguardar_desbloqueio();
 
-// Configuração do Timer para interrupção periódica
 void configurar_timer() {
 	DDRB |= (1 << LED_PIN); // Configura pino do LED como saída
 	PORTB &= ~(1 << LED_PIN); // Inicia com LED desligado
@@ -48,13 +47,24 @@ void configurar_timer() {
 	TCCR1A = 0; // Modo normal
 	TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11); // Modo CTC, prescaler 64
 	OCR1A = 250; // Valor para interrupção a cada 1ms (16MHz / 64 / 250 = 1ms)
-	TIMSK1 = (1 << OCIE1A); // Habilita interrupção por comparação
+}
+
+void habilitar_timer_timeout() {
+	TIMSK1 |= (1 << OCIE1A); // Habilita interrupção por comparação
+	resetar_timeout(); // Sempre reseta o timeout ao habilitar
+}
+
+void desabilitar_timer_timeout() {
+	TIMSK1 &= ~(1 << OCIE1A); // Desabilita interrupção por comparação
+	PORTB &= ~(1 << LED_PIN); // Garante que o LED esteja desligado
+	alerta_led = 0; // Desliga o alerta
+	timer_count = 0; 
 }
 
 ISR(TIMER1_COMPA_vect) {
 	timer_count++;
 
-	// Verifica período de alerta (últimos 12 segundos)
+	// Verifica período de alerta
 	if (timer_count >= TIMEOUT_ALERTA && timer_count < TIMEOUT_TOTAL) {
 		alerta_led = 1;
 
@@ -115,7 +125,7 @@ int main(void) {
 	prepara_teclado();
 	LCD_iniciar();
 	initUART();
-	configurar_timer();
+	configurar_timer(); // Apenas configura, não habilita a interrupção ainda
 	sei(); // Habilita interrupções globais
 
 	char codigo_aluno[7];
@@ -138,11 +148,12 @@ int main(void) {
 		if (serial_response_pending) {
 			SerialEnviaChars(2, serial_response_char);
 			serial_response_pending = 0; // Limpa a flag após envio
-			resetar_timeout(); // Reseta timeout após interação serial
+			resetar_timeout(); // Reseta timeout após interação serial (útil se o timer estiver ativo)
 		}
 
 		// Sistema bloqueado por comando ST, SH ou timeout
 		if (isBlocked()) {
+			desabilitar_timer_timeout(); // Garante que o timer esteja desabilitado
 			aguardar_desbloqueio();
 			estado = ESTADO_TELA_INICIAL;
 			continue;
@@ -150,7 +161,7 @@ int main(void) {
 		
 		switch (estado) {
 			case ESTADO_TELA_INICIAL:
-			resetar_timeout();
+			desabilitar_timer_timeout(); // Desabilita o timer na tela inicial
 			LCD_limpar();
 			mensagem_Inicial();
 			while (varredura() == 0) {
@@ -162,9 +173,9 @@ int main(void) {
 			break;
 
 			case ESTADO_CODIGO:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			ler_codigo_aluno(codigo_aluno);
-			if (isBlocked()) { // Se bloqueado durante a leitura
+			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
 			}
@@ -172,9 +183,9 @@ int main(void) {
 			break;
 
 			case ESTADO_SENHA:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			ler_senha(senha_aluno);
-			if (isBlocked()) { // Se bloqueado durante a leitura
+			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
 			}
@@ -182,7 +193,7 @@ int main(void) {
 			break;
 
 			case ESTADO_VALIDACAO:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
 				LCD_limpar();
 				LCD_Escrever_Linha(0, 0, "BEM VINDO(A)!");
@@ -199,7 +210,7 @@ int main(void) {
 			break;
 
 			case ESTADO_MENU:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			LCD_limpar();
 			indice_menu = 0;
 			LCD_Escrever_Linha(0, 0, opcoes[indice_menu]);
@@ -214,6 +225,7 @@ int main(void) {
 
 				tecla = varredura();
 				if (tecla != 0) {
+					resetar_timeout(); // Reseta o timeout a cada tecla pressionada no menu
 					delay1ms(300); // Debounce
 
 					if (tecla == 'B') { // Rolar para baixo
@@ -257,9 +269,9 @@ int main(void) {
 			break;
 
 			case ESTADO_SAQUE:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			realizar_saque();
-			if (isBlocked()) { // Se bloqueado durante o saque
+			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
 			}
@@ -267,7 +279,7 @@ int main(void) {
 			break;
 
 			case ESTADO_PAGAMENTO:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			LCD_limpar();
 			LCD_Escrever_Linha(0, 0, "Pagamento");
 			LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
@@ -276,9 +288,9 @@ int main(void) {
 			break;
 
 			case ESTADO_SALDO:
-			resetar_timeout();
+			habilitar_timer_timeout(); // Habilita o timer aqui
 			consultar_saldo();
-			if (isBlocked()) { // Se bloqueado durante a consulta de saldo
+			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
 			}
