@@ -324,12 +324,15 @@ void finalizar_sessao(void) {
 	//LCD_Escrever_Linha(0, 0, resposta);
 	//delay1ms(2000);
 	
-	if (resposta[0] == 'S' && resposta[1] == 'F') {
+	LCD_Escrever_Linha(0, 0, "Sessao");
+	LCD_Escrever_Linha(1, 0, "Finalizada!");
+	
+	/*if (resposta[0] == 'S' && resposta[1] == 'F') {
 		LCD_Escrever_Linha(0, 0, "Sessao");
 		LCD_Escrever_Linha(1, 0, "Finalizada!");
 		} else {
 		LCD_Escrever_Linha(0, 0, "Erro ao finalizar");
 		LCD_Escrever_Linha(1, 0, "sessao!");
-	}
+	}*/
 	delay1ms(2000);
 }
