@@ -1,3 +1,4 @@
+// GccApplication2/main.c
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
@@ -14,8 +15,8 @@
 
 // Definições para controle de timeout e LED
 #define LED_PIN PB4 // Pino do LED (PB4 = pino 12 no Arduino Uno)
-#define TIMEOUT_TOTAL 30000 // 30 segundos em milissegundos para inatividade
-#define TIMEOUT_ALERTA 18000 // 18 segundos (30s - 12s) para começar a piscar
+#define TIMEOUT_TOTAL 30000 // 30 segundos em milissegundos para inatividade [cite: 17]
+#define TIMEOUT_ALERTA 18000 // 18 segundos (30s - 12s) para começar a piscar [cite: 19]
 #define INTERVALO_PISCA 250 // 250ms para piscar 2 vezes por segundo (500ms período)
 
 typedef enum {
@@ -58,7 +59,7 @@ void desabilitar_timer_timeout() {
 	TIMSK1 &= ~(1 << OCIE1A); // Desabilita interrupção por comparação
 	PORTB &= ~(1 << LED_PIN); // Garante que o LED esteja desligado
 	alerta_led = 0; // Desliga o alerta
-	timer_count = 0; 
+	timer_count = 0;
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -68,7 +69,7 @@ ISR(TIMER1_COMPA_vect) {
 	if (timer_count >= TIMEOUT_ALERTA && timer_count < TIMEOUT_TOTAL) {
 		alerta_led = 1;
 
-		// Pisca o LED 2 vezes por segundo
+		// Pisca o LED 2 vezes por segundo [cite: 19]
 		if (timer_count % INTERVALO_PISCA == 0) {
 			led_state = !led_state;
 			if (led_state) {
@@ -79,10 +80,10 @@ ISR(TIMER1_COMPA_vect) {
 		}
 	}
 
-	// Timeout completo (30 segundos)
+	// Timeout completo (30 segundos) [cite: 17]
 	if (timer_count >= TIMEOUT_TOTAL) {
 		enviar_confirmacao_operacional(); // Envia "CO"
-		finalizar_sessao(); // Encerra a sessão
+		finalizar_sessao(); // Encerra a sessão [cite: 18]
 		timer_count = 0; // Reseta contador
 		alerta_led = 0; // Desliga alerta
 		PORTB &= ~(1 << LED_PIN); // Desliga LED
@@ -95,7 +96,7 @@ void enviar_confirmacao_operacional() {
 	char confirmacao[2];
 	confirmacao[0] = 'C';
 	confirmacao[1] = 'O';
-	SerialEnviaChars(2, confirmacao); // Envia "CO"
+	SerialEnviaChars(2, confirmacao); // Envia "CO" [cite: 56]
 }
 
 // Reseta contador de timeout e estado do LED
@@ -108,7 +109,7 @@ void resetar_timeout() {
 // Aguarda o desbloqueio do terminal
 void aguardar_desbloqueio() {
 	LCD_limpar();
-	LCD_Escrever_Linha(0, 4, "FORA  DE"); // Exibe "FORA DE OPERAÇÃO"
+	LCD_Escrever_Linha(0, 4, "FORA  DE"); // Exibe "FORA DE OPERAÇÃO" [cite: 10]
 	LCD_Escrever_Linha(1, 4, "OPERACAO");
 	while (isBlocked()) { // Espera sistema ser desbloqueado
 		if (serial_response_pending) {
@@ -174,7 +175,7 @@ int main(void) {
 
 			case ESTADO_CODIGO:
 			habilitar_timer_timeout(); // Habilita o timer aqui
-			ler_codigo_aluno(codigo_aluno);
+			ler_codigo_aluno(codigo_aluno); // O cliente deve digitar seu código de aluno (6 dígitos) [cite: 5]
 			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
@@ -194,18 +195,18 @@ int main(void) {
 
 			case ESTADO_VALIDACAO:
 			habilitar_timer_timeout(); // Habilita o timer aqui
-			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) {
+			if (validar_codigo_aluno(codigo_aluno, senha_aluno)) { // O código será validado pelo servidor [cite: 5]
 				LCD_limpar();
 				LCD_Escrever_Linha(0, 0, "BEM VINDO(A)!");
 				LCD_Escrever_Linha(1, 0, "PROCESSANDO...");
 				delay1ms(2000);
-				estado = ESTADO_MENU;
+				estado = ESTADO_MENU; // Após validado o cliente deve-se indicar as opções permitidas [cite: 12]
 				} else {
 				LCD_limpar();
-				LCD_Escrever_Linha(0, 0, "CONTA INVALIDA!");
+				LCD_Escrever_Linha(0, 0, "CONTA INVALIDA!"); // Se o código não for válido o dispositivo exibe informação de conta inválida [cite: 6]
 				LCD_Escrever_Linha(1, 0, "TENTE NOVAMENTE");
 				delay1ms(2000);
-				estado = ESTADO_TELA_INICIAL;
+				estado = ESTADO_TELA_INICIAL; // E volta à tela inicial [cite: 6]
 			}
 			break;
 
@@ -255,7 +256,7 @@ int main(void) {
 						} else {
 						switch (tecla) {
 							case '1': estado = ESTADO_SAQUE; break;
-							case '2': estado = ESTADO_PAGAMENTO; break;
+							case '2': estado = ESTADO_PAGAMENTO; break; // Modified to go to ESTADO_PAGAMENTO
 							case '3': estado = ESTADO_SALDO; break;
 							case '4': // Sair
 							finalizar_sessao();
@@ -270,7 +271,7 @@ int main(void) {
 
 			case ESTADO_SAQUE:
 			habilitar_timer_timeout(); // Habilita o timer aqui
-			realizar_saque();
+			realizar_saque(); // Saque (máximo de R$1200,00) [cite: 23]
 			if (isBlocked()) {
 				estado = ESTADO_TELA_INICIAL;
 				break;
@@ -280,10 +281,11 @@ int main(void) {
 
 			case ESTADO_PAGAMENTO:
 			habilitar_timer_timeout(); // Habilita o timer aqui
-			LCD_limpar();
-			LCD_Escrever_Linha(0, 0, "Pagamento");
-			LCD_Escrever_Linha(1, 0, "Em desenvolvimento");
-			delay1ms(2000);
+			realizar_pagamento(); // Payment option [cite: 23]
+			if (isBlocked()) {
+				estado = ESTADO_TELA_INICIAL;
+				break;
+			}
 			estado = ESTADO_MENU;
 			break;
 
